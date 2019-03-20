@@ -1,7 +1,7 @@
 package com.gihub.fehu.opentracing
 
 import cats.{ Eval, Later }
-import Implicits.defaultTracer
+import NullableImplicits.Tracer.defaultNullableTracer
 import cats.effect.IO
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
@@ -60,7 +60,7 @@ class TraceSpec extends FreeSpec with Spec {
   }
 
   "lack of defined tracer should not affect other functionality" in {
-    implicit val defaultTracer: Tracer = null
+    implicit val defaultNullableTracer: Tracer = null
     trace.now("undefined") { activeSpan() shouldBe null }
     finishedSpans() shouldBe empty
   }
