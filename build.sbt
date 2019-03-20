@@ -14,7 +14,8 @@ lazy val root = (project in file("."))
       "io.opentracing" % "opentracing-util" % opentracingVersion,
       "org.typelevel" %% "cats-core"        % catsVersion,
       "org.scalatest" %% "scalatest"        % "3.0.5"            % Test,
-      "io.opentracing" % "opentracing-mock" % opentracingVersion % Test
+      "io.opentracing" % "opentracing-mock" % opentracingVersion % Test,
+      "org.typelevel" %% "cats-effect"      % "1.2.0"            % Test
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9" cross CrossVersion.binary),
   )

@@ -1,13 +1,23 @@
 package com.gihub.fehu.opentracing
 
 import scala.language.{ higherKinds, implicitConversions }
-import scala.util.Try
 
-import cats.{ Eval, Id, Later, ~> }
+import cats.arrow.FunctionK
+import cats.data.EitherT
+import cats.{ Defer, Eval, Later, MonadError, ~> }
+import cats.syntax.applicativeError._
+import cats.syntax.comonad._
+import cats.syntax.either._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.monadError._
 import io.opentracing.{ Scope, Span, Tracer }
+import com.gihub.fehu.opentracing.util.cats.defer
 
 
 trait Tracing[F0[_], F1[_]] {
+  parent =>
+
   import Tracing._
 
   protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F0 ~> F1
@@ -28,14 +38,27 @@ trait Tracing[F0[_], F1[_]] {
   }
 
   def transform(implicit tracer: Tracer): Transform = new Transform
-  class Transform(implicit tracer: Tracer) extends InterfaceImpl[F0 ~> F1](locally) with Transformation[F0, F1]
+  class Transform(implicit tracer: Tracer) extends InterfaceImpl[F0 ~> F1](locally)
 
   def apply[A](fa: => F0[A])(implicit tracer: Tracer): PartiallyApplied[A] = new PartiallyApplied(fa)
   class PartiallyApplied[A](fa: F0[A])(implicit tracer: Tracer) extends InterfaceImpl[F1[A]](_(fa))
 
+
+  def map[R[_]](f: F1 ~> R): Tracing[F0, R] =
+    new Tracing[F0, R] {
+      protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F0 ~> R =
+        f compose parent.build(spanBuilder, activate)
+      protected def stub: F0 ~> R = f compose parent.stub
+    }
+  def contramap[S[_]](f: S ~> F0): Tracing[S, F1] =
+    new Tracing[S, F1] {
+      protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): S ~> F1 =
+        parent.build(spanBuilder, activate) compose f
+      protected def stub: S ~> F1 = parent.stub compose f
+    }
 }
 
-object Tracing {
+object Tracing extends TracingEvalLaterImplicits {
 
   /** Common interface for building traces. Starts active by default. */
   trait Interface[Out] {
@@ -58,25 +81,6 @@ object Tracing {
     }
   }
 
-  trait Transformation[A[_], B[_]] extends Interface[A ~> B] {
-    def map    [C[_]](f: B ~> C): Transformation[A, C] = Transformation.AndThen(this, f)
-    def andThen[C[_]](f: B ~> C): Transformation[A, C] = Transformation.AndThen(this, f)
-
-    def contramap[C[_]](f: C ~> A): Transformation[C, B] = Transformation.Compose(this, f)
-    def compose  [C[_]](f: C ~> A): Transformation[C, B] = Transformation.Compose(this, f)
-  }
-  object Transformation {
-    case class Compose[A[_], B[_], C[_]](f: Transformation[B, C], g: A ~> B) extends Transformation[A, C] {
-      val tracer: Tracer = f.tracer
-      def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): A ~> C =
-        f(parent, activate, operation, tags) compose g
-    }
-    case class AndThen[A[_], B[_], C[_]](f: Transformation[A, B], g: B ~> C) extends Transformation[A, C] {
-      val tracer: Tracer = f.tracer
-      def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): A ~> C =
-        g compose f(parent, activate, operation, tags)
-    }
-  }
 
   final case class Tag(key: String, value: TagValue) {
     def toPair: (String, TagValue) = key -> value
@@ -113,36 +117,62 @@ object Tracing {
 
   class TracingSetup(
     val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
-    val beforeStopScope: Try[_] => Scope => Scope,
-    val beforeStopSpan: Try[_] => Span => Span
+    val beforeStopScope: Either[Throwable, _] => Scope => Scope,
+    val beforeStopSpan: Either[Throwable, _] => Span => Span
   )
   object TracingSetup {
     implicit object DummyTracingSetup extends TracingSetup(locally, _ => locally, _ => locally)
   }
 
 
-  implicit def tracingEvalLater(implicit setup: TracingSetup): TracingEvalLater = new TracingEvalLater(setup)
-  class TracingEvalLater(val setup: TracingSetup) extends Tracing[Later, Eval] {
-    protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): Later ~> Eval = {
-      val builder = setup.beforeStart(spanBuilder)
-      λ[Later ~> Eval] { later =>
-        for {
-          scopeOrSpan <- Eval.later {
-            if (activate) Left(builder.startActive(true)) else Right(builder.start())
-          }
-          tried <- Eval.now{ Try(later.value) }
-          _ <- Eval.now {
-            scopeOrSpan.fold(
-              setup.beforeStopScope(tried) andThen (_.close()),
-              setup.beforeStopSpan (tried) andThen (_.finish())
-            )
-          }
-        } yield tried.get
+  implicit def tracingDeferMonadError[F[_]](implicit setup: TracingSetup, D: Defer[F], M: MonadError[F, Throwable]): Tracing[F, F] =
+    new Tracing[F, F] {
+      protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F ~> F = {
+        val builder = setup.beforeStart(spanBuilder)
+        λ[F ~> F] { fa =>
+          for {
+            scopeOrSpan <- defer[F]{ if (activate) Left(builder.startActive(true)) else Right(builder.start()) }
+            attempt <- fa.attempt
+            _ <- M.pure {
+              scopeOrSpan.fold(
+                setup.beforeStopScope(attempt) andThen (_.close()),
+                setup.beforeStopSpan (attempt) andThen (_.finish())
+              )
+            }
+            result <- M.pure(attempt).rethrow
+          } yield result
+        }
       }
+
+      protected def stub: F ~> F = FunctionK.id[F]
     }
-
-    protected def stub: Later ~> Eval = λ[Later ~> Eval](later => later)
-  }
-
 }
 
+
+trait TracingEvalLaterImplicits {
+  implicit def tracingEvalLater(implicit setup: Tracing.TracingSetup): Tracing[Later, Eval] =
+    Tracing.tracingDeferMonadError[EitherT[Eval, Throwable, ?]]
+      .contramap[Later](EitherT.liftK[Eval, Throwable] compose λ[Later ~> Eval](l => l))
+      .map(λ[EitherT[Eval, Throwable, ?] ~> Eval](_.valueOr(throw _)))
+
+  private lazy val originalcatsEvalTMonadError = EitherT.catsDataMonadErrorForEitherT[Eval, Throwable]
+  implicit lazy val catsEvalEitherTMonadError: MonadError[EitherT[Eval, Throwable, ?], Throwable] =
+    new MonadError[EitherT[Eval, Throwable, ?], Throwable] {
+      def pure[A](x: A): EitherT[Eval, Throwable, A] =
+        originalcatsEvalTMonadError.pure(x)
+      def flatMap[A, B](fa: EitherT[Eval, Throwable, A])(f: A => EitherT[Eval, Throwable, B]): EitherT[Eval, Throwable, B] =
+        originalcatsEvalTMonadError.flatMap(fa)(f)
+      def tailRecM[A, B](a: A)(f: A => EitherT[Eval, Throwable, Either[A, B]]): EitherT[Eval, Throwable, B] =
+        originalcatsEvalTMonadError.tailRecM(a)(f)
+      def raiseError[A](e: Throwable): EitherT[Eval, Throwable, A] =
+        originalcatsEvalTMonadError.raiseError(e)
+      def handleErrorWith[A](fa: EitherT[Eval, Throwable, A])(f: Throwable => EitherT[Eval, Throwable, A]): EitherT[Eval, Throwable, A] =
+        originalcatsEvalTMonadError.handleErrorWith {
+          EitherT(defer[Eval]{
+            Either
+              .catchNonFatal { fa.value.extract }
+              .valueOr(Left(_))
+          })
+        }(f)
+    }
+}

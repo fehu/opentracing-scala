@@ -2,6 +2,7 @@ package com.gihub.fehu.opentracing
 
 import cats.{ Eval, Later }
 import Implicits.defaultTracer
+import cats.effect.IO
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import org.scalatest.{ Assertion, FreeSpec }
@@ -62,6 +63,15 @@ class TraceSpec extends FreeSpec with Spec {
     implicit val defaultTracer: Tracer = null
     trace.now("undefined") { activeSpan() shouldBe null }
     finishedSpans() shouldBe empty
+  }
+
+  "support tracing types of classes `Defer` a `MonadError`" in {
+    val io = IO { activeSpan() should not be null }.tracing("IO")
+    activeSpan() shouldBe null
+    finishedSpans() shouldBe empty
+    io.unsafeRunSync()
+    val Seq(finished) = finishedSpans()
+    finished.operationName() shouldBe "IO"
   }
 
 }
