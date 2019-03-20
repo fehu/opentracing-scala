@@ -43,16 +43,25 @@ package object opentracing {
     }
 
 
-    object Span {
+    object Span extends LowPriorityNullableSpanImplicits {
       implicit def activeNullableSpan(implicit tracer: Tracer): Span = Implicits.activeSpanOpt(Option(tracer)).orNull
     }
-
-    object ScopeManager {
-      implicit def nullableScopeManager(implicit tracer: Tracer): ScopeManager = Implicits.scopeManagerOpt(Option(tracer)).orNull
+    trait LowPriorityNullableSpanImplicits {
+      implicit def defaultActiveNullableSpan: Span = Implicits.activeSpanOpt(Implicits.defaultTracerOpt).orNull
     }
 
-    object Scope {
+    object ScopeManager extends LowPriorityNullableScopeManagerImplicits {
+      implicit def nullableScopeManager(implicit tracer: Tracer): ScopeManager = Implicits.scopeManagerOpt(Option(tracer)).orNull
+    }
+    trait LowPriorityNullableScopeManagerImplicits {
+      implicit def defaultNullableScopeManager: ScopeManager = Implicits.scopeManagerOpt(Implicits.defaultTracerOpt).orNull
+    }
+
+    object Scope extends LowPriorityNullableScopeImplicits {
       implicit def activeNullableScope(implicit manager: ScopeManager): Scope = Implicits.activeScope(Option(manager)).orNull
+    }
+    trait LowPriorityNullableScopeImplicits {
+      implicit def defaultActiveNullableScope: Scope = Implicits.activeScope(Implicits.scopeManagerOpt(Implicits.defaultTracerOpt)).orNull
     }
   }
 
