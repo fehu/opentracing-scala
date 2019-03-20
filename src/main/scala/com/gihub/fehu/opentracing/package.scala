@@ -3,7 +3,7 @@ package com.gihub.fehu
 import scala.language.{ higherKinds, implicitConversions }
 
 import cats.{ Eval, Id, Later, ~> }
-import io.opentracing.{ Span, Tracer }
+import io.opentracing.{ Scope, ScopeManager, Span, Tracer }
 import io.opentracing.util.GlobalTracer
 
 package object opentracing {
@@ -29,6 +29,9 @@ package object opentracing {
   object Implicits {
     implicit def defaultTracerOpt: Option[Tracer] = Option(GlobalTracer.get())
     implicit def activeSpanOpt(implicit tracerOpt: Option[Tracer]): Option[Span] = tracerOpt.flatMap(Option apply _.activeSpan())
+
+    implicit def scopeManagerOpt(implicit tracerOpt: Option[Tracer]): Option[ScopeManager] = tracerOpt.flatMap(Option apply _.scopeManager())
+    implicit def activeScope(implicit managerOpt: Option[ScopeManager]): Option[Scope] = managerOpt.flatMap(Option apply _.active())
   }
 
   object NullableImplicits {
@@ -42,6 +45,14 @@ package object opentracing {
 
     object Span {
       implicit def activeNullableSpan(implicit tracer: Tracer): Span = Implicits.activeSpanOpt(Option(tracer)).orNull
+    }
+
+    object ScopeManager {
+      implicit def nullableScopeManager(implicit tracer: Tracer): ScopeManager = Implicits.scopeManagerOpt(Option(tracer)).orNull
+    }
+
+    object Scope {
+      implicit def activeNullableScope(implicit manager: ScopeManager): Scope = Implicits.activeScope(Option(manager)).orNull
     }
   }
 
