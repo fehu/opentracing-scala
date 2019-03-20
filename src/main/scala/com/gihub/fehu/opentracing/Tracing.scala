@@ -11,17 +11,20 @@ trait Tracing[F0[_], F1[_]] {
   import Tracing._
 
   protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F0 ~> F1
+  protected def stub: F0 ~> F1
 
   class InterfaceImpl[Out](mkOut: (F0 ~> F1) => Out)(implicit val tracer: Tracer) extends Interface[Out] {
-    def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out = {
-      val builder0 = tags.foldLeft(tracer.buildSpan(operation)) {
-        case (acc, (key, TagValue.String(str))) => acc.withTag(key, str)
-        case (acc, (key, TagValue.Number(num))) => acc.withTag(key, num)
-        case (acc, (key, TagValue.Boolean(b)))  => acc.withTag(key, b)
+    def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out =
+      if (tracer eq null) mkOut(stub)
+      else {
+        val builder0 = tags.foldLeft(tracer.buildSpan(operation)) {
+          case (acc, (key, TagValue.String(str))) => acc.withTag(key, str)
+          case (acc, (key, TagValue.Number(num))) => acc.withTag(key, num)
+          case (acc, (key, TagValue.Boolean(b)))  => acc.withTag(key, b)
+        }
+        val builder1 = parent.map(builder0.asChildOf).getOrElse(builder0)
+        mkOut(build(builder1, activate))
       }
-      val builder1 = parent.map(builder0.asChildOf).getOrElse(builder0)
-      mkOut(build(builder1, activate))
-    }
   }
 
   def transform(implicit tracer: Tracer): Transform = new Transform
@@ -137,6 +140,8 @@ object Tracing {
         } yield tried.get
       }
     }
+
+    protected def stub: Later ~> Eval = λ[Later ~> Eval](later => later)
   }
 
 }

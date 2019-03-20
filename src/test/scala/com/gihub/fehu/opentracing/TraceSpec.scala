@@ -2,12 +2,13 @@ package com.gihub.fehu.opentracing
 
 import cats.{ Eval, Later }
 import Implicits.defaultTracer
+import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import org.scalatest.{ Assertion, FreeSpec }
 
 class TraceSpec extends FreeSpec with Spec {
 
-  def activeSpan() = GlobalTracer.get().activeSpan()
+  def activeSpan() = Option(GlobalTracer.get()).map(_.activeSpan()).orNull
 
   "`trace` syntax should allow to" - {
     "build active spans" - {
@@ -55,6 +56,12 @@ class TraceSpec extends FreeSpec with Spec {
     later.value
     val Seq(finished) = finishedSpans()
     finished.operationName() shouldBe "123"
+  }
+
+  "lack of defined tracer should not affect other functionality" in {
+    implicit val defaultTracer: Tracer = null
+    trace.now("undefined") { activeSpan() shouldBe null }
+    finishedSpans() shouldBe empty
   }
 
 }
