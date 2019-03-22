@@ -25,16 +25,7 @@ trait Tracing[F0[_], F1[_]] {
 
   class InterfaceImpl[Out](mkOut: (F0 ~> F1) => Out)(implicit val tracer: Tracer) extends Interface[Out] {
     def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out =
-      if (tracer eq null) mkOut(noTrace)
-      else {
-        val builder0 = tags.foldLeft(tracer.buildSpan(operation)) {
-          case (acc, (key, TagValue.String(str))) => acc.withTag(key, str)
-          case (acc, (key, TagValue.Number(num))) => acc.withTag(key, num)
-          case (acc, (key, TagValue.Boolean(b)))  => acc.withTag(key, b)
-        }
-        val builder1 = parent.map(builder0.asChildOf).getOrElse(builder0)
-        mkOut(build(builder1, activate))
-      }
+      Tracing.Interface.impl(parent, activate, operation, tags)(tracer, (b, a) => mkOut(build(b, a)), mkOut(noTrace))
   }
 
   def transform(implicit tracer: Tracer): Transform = new Transform
@@ -79,6 +70,20 @@ object Tracing extends TracingEvalLaterImplicits {
       def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): R =
         f(original(parent, activate, operation, tags))
     }
+
+    type Activate = Boolean
+    def impl[Out](parent: Option[Span], activate: Activate, operation: String, tags: Map[String, TagValue])
+                 (tracer: Tracer, build: (Tracer.SpanBuilder, Activate) => Out, noTrace: => Out): Out =
+      if (tracer eq null) noTrace
+      else {
+        val builder0 = tags.foldLeft(tracer.buildSpan(operation)) {
+          case (acc, (key, TagValue.String(str))) => acc.withTag(key, str)
+          case (acc, (key, TagValue.Number(num))) => acc.withTag(key, num)
+          case (acc, (key, TagValue.Boolean(b)))  => acc.withTag(key, b)
+        }
+        val builder1 = parent.map(builder0.asChildOf).getOrElse(builder0)
+        build(builder1, activate)
+      }
   }
 
 
@@ -147,8 +152,8 @@ object Tracing extends TracingEvalLaterImplicits {
         }
       }
       private def closeScopeOrSpan(scopeOrSpan: Either[Scope, Span], before: Span => Unit): Unit = scopeOrSpan.fold(
-        scope => { before(scope.span()); scope.close() },
-        span  => { before(span);         span.finish() }
+        scope => { try before(scope.span()) finally util.closeScopeSafe(scope) },
+        span  => { try before(span)         finally util.finishSpanSafe(span) }
       )
 
       protected def noTrace: F ~> F = FunctionK.id[F]

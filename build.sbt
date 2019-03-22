@@ -4,7 +4,7 @@ ThisBuild / organization     := "com.github.fehu"
 
 lazy val opentracingVersion = "0.31.0"
 lazy val catsVersion = "1.6.0"
-lazy val opentracingScalaAkkaVersion = "0.0.1"
+lazy val akkaVersion = "2.5.16"
 
 
 lazy val root = (project in file("."))
@@ -29,7 +29,7 @@ lazy val scala = (project in file("scala"))
 lazy val akka = (project in file("akka"))
   .settings(
     name := "opentracing-akka",
-    libraryDependencies += "io.opentracing.contrib" % "opentracing-scala-akka" % opentracingScalaAkkaVersion, // 2.12 only
+    libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     libraryDependencies ++= testDependencies,
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9" cross CrossVersion.binary)
   )

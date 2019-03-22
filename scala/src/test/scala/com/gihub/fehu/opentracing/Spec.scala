@@ -9,7 +9,7 @@ import org.scalatest.{ BeforeAndAfter, Matchers, Suite }
 trait Spec extends Matchers with BeforeAndAfter with DecorateAsScala {
   this: Suite =>
 
-  val mockTracer = new MockTracer(new ThreadLocalScopeManager)
+  implicit val mockTracer = new MockTracer(new ThreadLocalScopeManager)
 
   before {
     mockTracer.reset()

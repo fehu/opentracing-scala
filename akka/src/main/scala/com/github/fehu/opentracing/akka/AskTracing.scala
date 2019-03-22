@@ -7,7 +7,7 @@ import akka.pattern
 import akka.util.Timeout
 import cats.{ Id, ~> }
 import cats.syntax.either._
-import com.gihub.fehu.opentracing.Tracing
+import com.gihub.fehu.opentracing.{ Tracing, util }
 import io.opentracing.Tracer
 
 object AskTracing {
@@ -28,10 +28,12 @@ object AskTracing {
       λ[TracingMessage.MaybeDeferredTraced ~> λ[* => Future[Any]]]{
         case Left(msg) => ask(msg)
         case Right(later) =>
-          val (msg, scope) = later.value
+          val msg = later.value
           val future = ask(msg)
-          future.onComplete(setup.beforeStop(scope.span()) compose Either.fromTry)
-          scope.close()
+          future.onComplete { res =>
+            try setup.beforeStop(msg.span)(Either.fromTry(res))
+            finally util.finishSpanSafe(msg.span)
+          }
           future
       }
     )
