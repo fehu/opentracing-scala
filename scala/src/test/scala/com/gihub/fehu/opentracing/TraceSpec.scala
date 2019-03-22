@@ -1,5 +1,8 @@
 package com.gihub.fehu.opentracing
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import cats.{ Eval, Later }
 import NullableImplicits.Tracer.defaultNullableTracer
 import cats.effect.IO
@@ -65,13 +68,45 @@ class TraceSpec extends FreeSpec with Spec {
     finishedSpans() shouldBe empty
   }
 
-  "support tracing types of classes `Defer` a `MonadError`" in {
+  "support tracing types of classes `Defer` a `MonadError` (IO sync)" in {
     val io = IO { activeSpan() should not be null }.tracing("IO")
     activeSpan() shouldBe null
     finishedSpans() shouldBe empty
     io.unsafeRunSync()
     val Seq(finished) = finishedSpans()
     finished.operationName() shouldBe "IO"
+  }
+
+  "support tracing types of classes `Defer` a `MonadError` (IO async)" in {
+    val io = IO { activeSpan() should not be null }.tracing("IO")
+    activeSpan() shouldBe null
+    finishedSpans() shouldBe empty
+    trace.now("run IO") {
+      io.unsafeRunAsyncAndForget()
+    }
+    Thread.sleep(50)
+    val Seq(finishedInner, finishedOuter) = finishedSpans()
+    finishedInner.operationName() shouldBe "IO"
+    finishedOuter.operationName() shouldBe "run IO"
+    finishedInner.parentId() shouldBe finishedOuter.context().spanId()
+  }
+
+  "support tracing types of classes `Defer` a `MonadError` (IO to future)" in {
+    val io = IO { activeSpan() should not be null }.tracing("IO")
+    activeSpan() shouldBe null
+    finishedSpans() shouldBe empty
+
+    trace.now("Await") {
+      val future = trace.now("run IO") { io.unsafeToFuture() }
+      Await.result(future, 10.millis)
+    }
+
+    val Seq(finishedInner, finishedMiddle, finishedOuter) = finishedSpans()
+    finishedInner.operationName() shouldBe "IO"
+    finishedInner.parentId() shouldBe finishedMiddle.context().spanId()
+    finishedMiddle.operationName() shouldBe "run IO"
+    finishedMiddle.parentId() shouldBe finishedOuter.context().spanId()
+    finishedOuter.operationName() shouldBe "Await"
   }
 
 }
