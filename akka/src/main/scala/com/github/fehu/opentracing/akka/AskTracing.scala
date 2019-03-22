@@ -30,7 +30,7 @@ object AskTracing {
         case Right(later) =>
           val (msg, scope) = later.value
           val future = ask(msg)
-          future.onComplete(res => setup.beforeStopScope(Either.fromTry(res))(scope))
+          future.onComplete(setup.beforeStop(scope.span()) compose Either.fromTry)
           scope.close()
           future
       }

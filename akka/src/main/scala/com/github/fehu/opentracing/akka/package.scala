@@ -15,6 +15,7 @@ package object akka {
     implicit
     trace: Tracing[Id, MaybeDeferredTraced],
     tracer: Tracer,
+    setup: Tracing.TracingSetup,
     timeout: Timeout,
     executionContext: ExecutionContext
   ): AskTracing.Ops = new AskTracing.Ops(actorRef, message, sender)
@@ -23,6 +24,7 @@ package object akka {
     implicit
     trace: Tracing[Id, MaybeDeferredTraced],
     tracer: Tracer,
+    setup: Tracing.TracingSetup,
     timeout: Timeout,
     executionContext: ExecutionContext,
     sender: ActorRef = ActorRef.noSender

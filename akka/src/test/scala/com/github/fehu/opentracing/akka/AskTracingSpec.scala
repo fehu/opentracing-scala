@@ -9,6 +9,7 @@ import com.gihub.fehu.opentracing.trace
 import com.gihub.fehu.opentracing.NullableImplicits.Tracer._
 import com.gihub.fehu.opentracing.Implicits._
 import com.gihub.fehu.opentracing.Spec
+import com.gihub.fehu.opentracing.Tracing.TracingSetup.Dummy._
 import io.opentracing.contrib.akka.TracedAbstractActor
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec }
 

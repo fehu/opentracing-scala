@@ -24,5 +24,5 @@ class TracingMessage(implicit setup: Tracing.TracingSetup) extends Tracing[Id, T
         new TracedMessage(msg, scope.span()) -> scope
       })
     }
-  protected def stub: Id ~> MaybeDeferredTraced = λ[Id ~> MaybeDeferredTraced](Left(_))
+  protected def noTrace: Id ~> MaybeDeferredTraced = λ[Id ~> MaybeDeferredTraced](Left(_))
 }

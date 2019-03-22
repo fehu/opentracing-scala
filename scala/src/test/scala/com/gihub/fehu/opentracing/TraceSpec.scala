@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import cats.{ Eval, Later }
 import NullableImplicits.Tracer.defaultNullableTracer
 import cats.effect.IO
+import com.gihub.fehu.opentracing.Tracing.TracingSetup.Dummy._
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import org.scalatest.{ Assertion, FreeSpec }

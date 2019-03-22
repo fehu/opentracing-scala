@@ -21,11 +21,11 @@ trait Tracing[F0[_], F1[_]] {
   import Tracing._
 
   protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F0 ~> F1
-  protected def stub: F0 ~> F1
+  protected def noTrace: F0 ~> F1
 
   class InterfaceImpl[Out](mkOut: (F0 ~> F1) => Out)(implicit val tracer: Tracer) extends Interface[Out] {
     def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out =
-      if (tracer eq null) mkOut(stub)
+      if (tracer eq null) mkOut(noTrace)
       else {
         val builder0 = tags.foldLeft(tracer.buildSpan(operation)) {
           case (acc, (key, TagValue.String(str))) => acc.withTag(key, str)
@@ -48,13 +48,13 @@ trait Tracing[F0[_], F1[_]] {
     new Tracing[F0, R] {
       protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F0 ~> R =
         f compose parent.build(spanBuilder, activate)
-      protected def stub: F0 ~> R = f compose parent.stub
+      protected def noTrace: F0 ~> R = f compose parent.noTrace
     }
   def contramap[S[_]](f: S ~> F0): Tracing[S, F1] =
     new Tracing[S, F1] {
       protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): S ~> F1 =
         parent.build(spanBuilder, activate) compose f
-      protected def stub: S ~> F1 = parent.stub compose f
+      protected def noTrace: S ~> F1 = parent.noTrace compose f
     }
 }
 
@@ -117,11 +117,15 @@ object Tracing extends TracingEvalLaterImplicits {
 
   class TracingSetup(
     val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
-    val beforeStopScope: Either[Throwable, _] => Scope => Scope,
-    val beforeStopSpan: Either[Throwable, _] => Span => Span
+    val beforeStop: Span => Either[Throwable, _] => Unit,
+    val beforeCritical: Span => Error => Unit
   )
   object TracingSetup {
-    implicit object DummyTracingSetup extends TracingSetup(locally, _ => locally, _ => locally)
+    object Dummy {
+      implicit object DummyTracingSetup extends TracingSetup(locally, void, void)
+
+      @inline private def void[A, B](a: A)(b: B): Unit = {}
+    }
   }
 
 
@@ -132,19 +136,22 @@ object Tracing extends TracingEvalLaterImplicits {
         λ[F ~> F] { fa =>
           for {
             scopeOrSpan <- defer[F]{ if (activate) Left(builder.startActive(true)) else Right(builder.start()) }
-            attempt <- fa.attempt
-            _ <- M.pure {
-              scopeOrSpan.fold(
-                setup.beforeStopScope(attempt) andThen (_.close()),
-                setup.beforeStopSpan (attempt) andThen (_.finish())
-              )
-            }
+            attempt <- try fa.attempt
+                       catch { case critical: Error =>
+                                closeScopeOrSpan(scopeOrSpan, setup.beforeCritical(_)(critical))
+                                throw critical
+                             }
+            _ <- M.pure { closeScopeOrSpan(scopeOrSpan, setup.beforeStop(_)(attempt)) }
             result <- M.pure(attempt).rethrow
           } yield result
         }
       }
+      private def closeScopeOrSpan(scopeOrSpan: Either[Scope, Span], before: Span => Unit): Unit = scopeOrSpan.fold(
+        scope => { before(scope.span()); scope.close() },
+        span  => { before(span);         span.finish() }
+      )
 
-      protected def stub: F ~> F = FunctionK.id[F]
+      protected def noTrace: F ~> F = FunctionK.id[F]
     }
 }
 
