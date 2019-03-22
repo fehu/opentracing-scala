@@ -4,7 +4,7 @@ ThisBuild / organization     := "com.github.fehu"
 
 lazy val opentracingVersion = "0.31.0"
 lazy val catsVersion = "1.6.0"
-lazy val opentracingScalaAkkaVersion = "0.1.0-SNAPSHOT"
+lazy val opentracingScalaAkkaVersion = "0.0.1"
 
 
 lazy val root = (project in file("."))
@@ -30,7 +30,7 @@ lazy val scala = (project in file("scala"))
 lazy val akka = (project in file("akka"))
   .settings(
     name := "opentracing-akka",
-    libraryDependencies += "com.github.fehu" %% "opentracing-contrib-scala-akka-fork" % opentracingScalaAkkaVersion
+    libraryDependencies += "io.opentracing.contrib" % "opentracing-scala-akka" % opentracingScalaAkkaVersion // 2.12 only
   )
   .dependsOn(scala)
 
