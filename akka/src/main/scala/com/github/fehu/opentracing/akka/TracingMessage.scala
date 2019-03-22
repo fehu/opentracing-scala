@@ -1,5 +1,7 @@
 package com.github.fehu.opentracing.akka
 
+import scala.util.Try
+
 import cats.arrow.FunctionK
 import cats.{ Id, Later, ~> }
 import com.gihub.fehu.opentracing.Tracing
@@ -19,6 +21,7 @@ class TracingMessage(implicit setup: Tracing.TracingSetup) extends Tracing[Id, T
     λ[FunctionK[Id, MaybeDeferredTraced]] { msg =>
       Right(Later{
         val span = setup.beforeStart(spanBuilder).start()
+        Try { setup.justAfterStart(span) }
         TracedMessage(msg, span)
       })
     }

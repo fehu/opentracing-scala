@@ -1,6 +1,7 @@
 package com.gihub.fehu.opentracing
 
 import scala.language.{ higherKinds, implicitConversions }
+import scala.util.Try
 
 import cats.arrow.FunctionK
 import cats.data.EitherT
@@ -121,15 +122,13 @@ object Tracing extends TracingEvalLaterImplicits {
   }
 
   class TracingSetup(
-    val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
-    val beforeStop: Span => Either[Throwable, _] => Unit,
-    val beforeCritical: Span => Error => Unit
+    val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder = locally,
+    val justAfterStart: Span => Unit                          = _ => {},
+    val beforeStop: Either[Throwable, _] => Span => Unit      = _ => _ => {}
   )
   object TracingSetup {
     object Dummy {
-      implicit object DummyTracingSetup extends TracingSetup(locally, void, void)
-
-      @inline private def void[A, B](a: A)(b: B): Unit = {}
+      implicit object DummyTracingSetup extends TracingSetup()
     }
   }
 
@@ -141,12 +140,9 @@ object Tracing extends TracingEvalLaterImplicits {
         λ[F ~> F] { fa =>
           for {
             scopeOrSpan <- defer[F]{ if (activate) Left(builder.startActive(true)) else Right(builder.start()) }
-            attempt <- try fa.attempt
-                       catch { case critical: Error =>
-                                closeScopeOrSpan(scopeOrSpan, setup.beforeCritical(_)(critical))
-                                throw critical
-                             }
-            _ <- M.pure { closeScopeOrSpan(scopeOrSpan, setup.beforeStop(_)(attempt)) }
+            _ <- M.pure(Try { setup.justAfterStart(scopeOrSpan.leftMap(_.span()).merge) })
+            attempt <- fa.attempt
+            _ <- M.pure { closeScopeOrSpan(scopeOrSpan, setup.beforeStop(attempt)) }
             result <- M.pure(attempt).rethrow
           } yield result
         }

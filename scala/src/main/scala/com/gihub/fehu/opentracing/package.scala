@@ -1,9 +1,10 @@
 package com.gihub.fehu
 
+import scala.collection.JavaConverters._
 import scala.language.higherKinds
 
 import cats.{ Eval, Later }
-import io.opentracing.Tracer
+import io.opentracing.{ Span, Tracer }
 
 package object opentracing {
 
@@ -13,4 +14,7 @@ package object opentracing {
     def tracing: trace.PartiallyApplied[A] = trace(fa)
   }
 
+  implicit class SpanOps(span: Span) {
+    def log(fields: (String, Any)*): Span = span.log(fields.toMap.asJava)
+  }
 }

@@ -5,11 +5,13 @@ import scala.concurrent.duration._
 
 import cats.{ Eval, Later }
 import cats.effect.IO
-import com.gihub.fehu.opentracing.Tracing.TracingSetup.Dummy._
+import com.gihub.fehu.opentracing.Tracing.TracingSetup
 import io.opentracing.Tracer
 import org.scalatest.{ Assertion, FreeSpec }
 
 class TraceSpec extends FreeSpec with Spec {
+
+  implicit val tracingSetup: TracingSetup = TracingSetup.Dummy.DummyTracingSetup
 
   def activeSpan()(implicit tracer: Tracer) = Option(tracer).map(_.activeSpan()).orNull
 
@@ -106,6 +108,30 @@ class TraceSpec extends FreeSpec with Spec {
     finishedMiddle.operationName() shouldBe "run IO"
     finishedMiddle.parentId() shouldBe finishedOuter.context().spanId()
     finishedOuter.operationName() shouldBe "Await"
+  }
+
+  "allow to customize spans preparation and termination" in {
+    // use same name to override implicit
+    implicit val tracingSetup: TracingSetup = new TracingSetup(
+      beforeStart = _.withTag("beforeStart", true),
+      justAfterStart = _.log("justAfterStart"),
+      beforeStop = res => _
+        .log("beforeStop")
+        .setTag("result", res.toString)
+        .setTag("success", res.isRight)
+    )
+
+    trace.now("123") { activeSpan().log("123"); 123 }
+
+    val Seq(finished) = finishedSpans()
+    finished.operationName() shouldBe "123"
+    finished.tags().asScala shouldBe Map(
+      "beforeStart" -> true,
+      "result"  -> Right(123).toString,
+      "success" -> true
+    )
+    finished.logEntries().asScala.flatMap(_.fields().values().asScala) shouldBe
+      Seq("justAfterStart", "123", "beforeStop")
   }
 
 }

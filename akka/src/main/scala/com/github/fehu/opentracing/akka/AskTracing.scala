@@ -31,7 +31,7 @@ object AskTracing {
           val msg = later.value
           val future = ask(msg)
           future.onComplete { res =>
-            try setup.beforeStop(msg.span)(Either.fromTry(res))
+            try setup.beforeStop(Either.fromTry(res))(msg.span)
             finally util.finishSpanSafe(msg.span)
           }
           future
