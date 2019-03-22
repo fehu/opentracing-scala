@@ -18,7 +18,7 @@ lazy val scala = (project in file("scala"))
   .settings(
     name := "opentracing-scala",
     libraryDependencies ++= Seq(
-      "io.opentracing" % "opentracing-util" % opentracingVersion,
+      "io.opentracing" % "opentracing-api"  % opentracingVersion,
       "org.typelevel" %% "cats-core"        % catsVersion,
       "org.typelevel" %% "cats-effect"      % "1.2.0"            % Test
     ),

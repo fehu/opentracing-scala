@@ -4,16 +4,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import cats.{ Eval, Later }
-import NullableImplicits.Tracer.defaultNullableTracer
 import cats.effect.IO
 import com.gihub.fehu.opentracing.Tracing.TracingSetup.Dummy._
 import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.scalatest.{ Assertion, FreeSpec }
 
 class TraceSpec extends FreeSpec with Spec {
 
-  def activeSpan() = Option(GlobalTracer.get()).map(_.activeSpan()).orNull
+  def activeSpan()(implicit tracer: Tracer) = Option(tracer).map(_.activeSpan()).orNull
 
   "`trace` syntax should allow to" - {
     "build active spans" - {
@@ -64,7 +62,7 @@ class TraceSpec extends FreeSpec with Spec {
   }
 
   "lack of defined tracer should not affect other functionality" in {
-    implicit val defaultNullableTracer: Tracer = null
+    implicit val mockTracer: Tracer = null
     trace.now("undefined") { activeSpan() shouldBe null }
     finishedSpans() shouldBe empty
   }
