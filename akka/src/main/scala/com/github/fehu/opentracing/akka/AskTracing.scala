@@ -7,7 +7,7 @@ import akka.pattern
 import akka.util.Timeout
 import cats.{ Id, ~> }
 import cats.syntax.either._
-import com.gihub.fehu.opentracing.{ Tracing, util }
+import com.github.fehu.opentracing.{ Tracing, util }
 import io.opentracing.Tracer
 
 object AskTracing {

@@ -5,7 +5,6 @@ import scala.concurrent.ExecutionContext
 import _root_.akka.actor.ActorRef
 import _root_.akka.util.Timeout
 import cats.Id
-import com.gihub.fehu.opentracing.Tracing
 import io.opentracing.Tracer
 
 package object akka {

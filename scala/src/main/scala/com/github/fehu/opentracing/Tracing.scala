@@ -1,4 +1,4 @@
-package com.gihub.fehu.opentracing
+package com.github.fehu.opentracing
 
 import scala.language.{ higherKinds, implicitConversions }
 import scala.util.Try
@@ -13,7 +13,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import io.opentracing.{ Scope, Span, Tracer }
-import com.gihub.fehu.opentracing.util.cats.defer
+import com.github.fehu.opentracing.util.cats.defer
 
 
 trait Tracing[F0[_], F1[_]] {

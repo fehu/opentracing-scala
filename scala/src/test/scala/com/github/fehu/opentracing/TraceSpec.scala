@@ -1,11 +1,11 @@
-package com.gihub.fehu.opentracing
+package com.github.fehu.opentracing
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import cats.{ Eval, Later }
 import cats.effect.IO
-import com.gihub.fehu.opentracing.Tracing.TracingSetup
+import com.github.fehu.opentracing.Tracing.TracingSetup
 import io.opentracing.Tracer
 import org.scalatest.{ Assertion, FreeSpec }
 

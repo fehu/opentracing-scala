@@ -1,4 +1,4 @@
-package com.gihub.fehu.opentracing
+package com.github.fehu.opentracing
 
 import scala.collection.convert.DecorateAsScala
 

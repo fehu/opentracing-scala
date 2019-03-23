@@ -1,7 +1,7 @@
 package com.github.fehu.opentracing.akka
 
 import akka.fehu.MessageInterceptingActor
-import com.gihub.fehu.opentracing.{ Tracing, util }
+import com.github.fehu.opentracing.{ Tracing, util }
 import io.opentracing.{ Span, Tracer }
 
 

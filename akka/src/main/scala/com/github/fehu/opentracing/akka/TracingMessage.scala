@@ -4,7 +4,7 @@ import scala.util.Try
 
 import cats.arrow.FunctionK
 import cats.{ Id, Later, ~> }
-import com.gihub.fehu.opentracing.Tracing
+import com.github.fehu.opentracing.Tracing
 import io.opentracing.Tracer
 
 object TracingMessage {

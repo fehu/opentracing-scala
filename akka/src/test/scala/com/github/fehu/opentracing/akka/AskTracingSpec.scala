@@ -5,9 +5,9 @@ import scala.concurrent.duration._
 
 import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
 import akka.util.Timeout
-import com.gihub.fehu.opentracing.trace
-import com.gihub.fehu.opentracing.Spec
-import com.gihub.fehu.opentracing.Tracing.TracingSetup.Dummy._
+import com.github.fehu.opentracing.trace
+import com.github.fehu.opentracing.Spec
+import com.github.fehu.opentracing.Tracing.TracingSetup.Dummy._
 import io.opentracing.Tracer
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec }
 

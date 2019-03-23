@@ -1,4 +1,4 @@
-package com.gihub.fehu
+package com.github.fehu
 
 import scala.collection.JavaConverters._
 import scala.language.higherKinds

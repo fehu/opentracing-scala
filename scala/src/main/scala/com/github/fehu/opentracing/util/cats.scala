@@ -1,4 +1,4 @@
-package com.gihub.fehu.opentracing.util
+package com.github.fehu.opentracing.util
 
 import scala.language.higherKinds
 
