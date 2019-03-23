@@ -14,7 +14,10 @@ trait TracingActor extends MessageInterceptingActor {
   def actorSpan(): Option[Span] = _span
   private var _span: Option[Span] = None
 
+  protected[TracingActor] def setSpan(span: Span): Unit = _span = Option(span)
+
   protected def onSpanReceived(message: Any, span: Span): Unit = {}
+  protected def onNoSpanReceived(message: Any): Unit = {}
 
   protected def interceptIncoming(message: Any): Any = message match {
     case TracedMessage(msg, span0) =>
@@ -23,7 +26,9 @@ trait TracingActor extends MessageInterceptingActor {
         onSpanReceived(msg, span)
       }
       msg
-    case _ => message
+    case _ =>
+      onNoSpanReceived(message)
+      message
   }
 
   protected def afterReceive(): Unit = {
@@ -70,6 +75,14 @@ object TracingActor {
     override protected def onSpanReceived(message: Any, span: Span): Unit = {
       val childSpan = buildChildSpan(message).asChildOf(span).start()
       super.onSpanReceived(message, childSpan)
+    }
+  }
+
+  trait AlwaysChildSpan extends ChildSpan {
+    override protected def onNoSpanReceived(message: Any): Unit = {
+      val span = buildChildSpan(message).start()
+      setSpan(span)
+      super.onNoSpanReceived(message)
     }
   }
 
