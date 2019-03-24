@@ -11,10 +11,11 @@ package object util {
       catch { case _: IllegalStateException => }
     }
 
-  def safe(span: Span)(f: Span => Unit): Unit =
+  def safe[R](span: Span)(f: Span => R): Option[R] =
     if (span ne null) {
-      try f(span)
-      catch { case _: IllegalStateException => }
+      try Option(f(span))
+      catch { case _: IllegalStateException => None }
     }
+    else None
 
 }

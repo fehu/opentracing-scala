@@ -17,4 +17,16 @@ package object opentracing {
   implicit class SpanOps(span: Span) extends SpanLog(span) {
     def log(fields: (String, Any)*): Span = span.log(fields.toMap.asJava)
   }
+
+
+  def activate[R](span: Span, finishSpanOnClose: Boolean = false)(r: => R)(implicit tracer: Tracer): R = {
+    val scope = util.safe(span)(tracer.scopeManager().activate(_, finishSpanOnClose))
+    try r
+    finally scope.foreach(util.closeScopeSafe)
+  }
+
+  implicit class ActivateOps[F[_], A](fa: F[A])(implicit activate: Activating[F]) {
+    def activating(span: Span, finishSpanOnClose: Boolean = false): F[A] = activate(span, finishSpanOnClose)(fa)
+  }
+
 }

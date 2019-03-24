@@ -13,6 +13,7 @@ trait Spec extends Matchers with BeforeAndAfter with DecorateAsScala {
 
   before {
     mockTracer.reset()
+    mockTracer.scopeManager().activate(null, false)
   }
 
   def finishedSpans(): Seq[MockSpan] = mockTracer.finishedSpans().asScala
