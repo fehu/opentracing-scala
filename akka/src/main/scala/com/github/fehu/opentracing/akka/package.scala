@@ -5,7 +5,7 @@ import scala.concurrent.ExecutionContext
 import _root_.akka.actor.ActorRef
 import _root_.akka.util.Timeout
 import cats.Id
-import io.opentracing.Tracer
+import io.opentracing.{ Span, Tracer }
 
 package object akka {
   import TracingMessage._
@@ -32,4 +32,5 @@ package object akka {
 
   implicit def tracingMessage(implicit setup: Tracing.TracingSetup): TracingMessage = new TracingMessage
 
+  implicit class SpanLogOps(span: Span) extends SpanLog(span)
 }
