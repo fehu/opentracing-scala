@@ -31,6 +31,4 @@ package object akka {
 
 
   implicit def tracingMessage(implicit setup: Tracing.TracingSetup): TracingMessage = new TracingMessage
-
-  implicit class SpanLogOps(span: Span) extends SpanLog(span)
 }

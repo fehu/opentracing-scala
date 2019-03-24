@@ -1,6 +1,5 @@
-package com.github.fehu.opentracing.akka
+package com.github.fehu.opentracing
 
-import com.github.fehu.opentracing.{ SpanOps, util }
 import io.opentracing.Span
 
 class SpanLog(span: Span) {

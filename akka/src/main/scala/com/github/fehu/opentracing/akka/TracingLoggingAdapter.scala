@@ -1,6 +1,7 @@
 package com.github.fehu.opentracing.akka
 
 import akka.event.LoggingAdapter
+import com.github.fehu.opentracing.SpanLog
 import io.opentracing.Span
 
 

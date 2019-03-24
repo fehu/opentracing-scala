@@ -14,7 +14,7 @@ package object opentracing {
     def tracing: trace.PartiallyApplied[A] = trace(fa)
   }
 
-  implicit class SpanOps(span: Span) {
+  implicit class SpanOps(span: Span) extends SpanLog(span) {
     def log(fields: (String, Any)*): Span = span.log(fields.toMap.asJava)
   }
 }
