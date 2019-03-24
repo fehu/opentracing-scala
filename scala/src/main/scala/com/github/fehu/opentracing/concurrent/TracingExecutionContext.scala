@@ -24,7 +24,11 @@ object TracingExecutionContext {
     def active(underlying: ExecutionContext)(implicit tracer: Tracer): Builder = new Builder(underlying)
 
     class Builder(underlying: ExecutionContext)(implicit tracer: Tracer) {
-      implicit def context: Delegate = new Delegate(tracer.activeSpan(), underlying)
+      implicit def context: Delegate = ctx()
+      private lazy val ctx = underlying match {
+        case d: Delegate => () => d
+        case _ => () => new Delegate(tracer.activeSpan(), underlying)
+      }
     }
   }
 }
