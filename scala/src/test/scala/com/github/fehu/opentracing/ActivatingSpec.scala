@@ -1,11 +1,13 @@
 package com.github.fehu.opentracing
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
 import cats.Eval
 import cats.data.EitherT
 import cats.effect.IO
+import com.github.fehu.opentracing.concurrent.TracingExecutionContext
+import io.opentracing.mock.MockSpan.MockContext
 import org.scalatest.FreeSpec
 
 class ActivatingSpec extends FreeSpec with Spec {
@@ -76,6 +78,38 @@ class ActivatingSpec extends FreeSpec with Spec {
         finished.context().spanId() shouldBe span.context().spanId()
         finished.tags().asScala shouldBe fooBarMap
       }
+    }
+  }
+
+  "`TracingExecutionContext` should propagate span through" - {
+    "Future" in {
+      assume(activeSpan() eq null)
+      val span = mockTracer.buildSpan("test").start()
+      implicit val context: ExecutionContext = new TracingExecutionContext.Delegate(span, ExecutionContext.global)
+
+      val future = Future { Thread.sleep(30); setFooBarTag() }
+      activeSpan() shouldBe null
+      Await.result(future, 50.millis)
+      activeSpan() shouldBe null
+      span.finish()
+      val Seq(finished) = finishedSpans()
+      finished.context().spanId() shouldBe span.context().spanId()
+      finished.tags().asScala shouldBe fooBarMap
+    }
+
+    "IO from Future" in {
+      assume(activeSpan() eq null)
+      val tracingExec = TracingExecutionContext.Delegate.active(ExecutionContext.global)
+      import tracingExec.context
+      val scope = mockTracer.buildSpan("test").startActive(true)
+
+      val future = Future { setFooBarTag(); Thread.sleep(30) }
+      val io = IO.fromFuture(IO.pure(future))
+      Await.result(io.unsafeToFuture(), 50.millis)
+      scope.close()
+      val Seq(finished) = finishedSpans()
+      finished.context().spanId() shouldBe scope.span().context().asInstanceOf[MockContext].spanId()
+      finished.tags().asScala shouldBe fooBarMap
     }
   }
 
