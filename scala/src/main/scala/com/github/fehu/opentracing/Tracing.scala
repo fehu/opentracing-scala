@@ -7,7 +7,6 @@ import cats.arrow.FunctionK
 import cats.data.EitherT
 import cats.{ Defer, Eval, Later, MonadError, ~> }
 import cats.syntax.applicativeError._
-import cats.syntax.comonad._
 import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -153,34 +152,5 @@ object Tracing extends TracingEvalLaterImplicits {
       )
 
       protected def noTrace: F ~> F = FunctionK.id[F]
-    }
-}
-
-
-trait TracingEvalLaterImplicits {
-  implicit def tracingEvalLater(implicit setup: Tracing.TracingSetup): Tracing[Later, Eval] =
-    Tracing.tracingDeferMonadError[EitherT[Eval, Throwable, ?]]
-      .contramap[Later](EitherT.liftK[Eval, Throwable] compose λ[Later ~> Eval](l => l))
-      .map(λ[EitherT[Eval, Throwable, ?] ~> Eval](_.valueOr(throw _)))
-
-  private lazy val originalcatsEvalTMonadError = EitherT.catsDataMonadErrorForEitherT[Eval, Throwable]
-  implicit lazy val catsEvalEitherTMonadError: MonadError[EitherT[Eval, Throwable, ?], Throwable] =
-    new MonadError[EitherT[Eval, Throwable, ?], Throwable] {
-      def pure[A](x: A): EitherT[Eval, Throwable, A] =
-        originalcatsEvalTMonadError.pure(x)
-      def flatMap[A, B](fa: EitherT[Eval, Throwable, A])(f: A => EitherT[Eval, Throwable, B]): EitherT[Eval, Throwable, B] =
-        originalcatsEvalTMonadError.flatMap(fa)(f)
-      def tailRecM[A, B](a: A)(f: A => EitherT[Eval, Throwable, Either[A, B]]): EitherT[Eval, Throwable, B] =
-        originalcatsEvalTMonadError.tailRecM(a)(f)
-      def raiseError[A](e: Throwable): EitherT[Eval, Throwable, A] =
-        originalcatsEvalTMonadError.raiseError(e)
-      def handleErrorWith[A](fa: EitherT[Eval, Throwable, A])(f: Throwable => EitherT[Eval, Throwable, A]): EitherT[Eval, Throwable, A] =
-        originalcatsEvalTMonadError.handleErrorWith {
-          EitherT(defer[Eval]{
-            Either
-              .catchNonFatal { fa.value.extract }
-              .valueOr(Left(_))
-          })
-        }(f)
     }
 }
