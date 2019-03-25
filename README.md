@@ -20,6 +20,25 @@ trait Interface[Out] {
 
 There is auto derivation of `Tracing` instances for types that are both `cats.Defer` and `cats.MonadError`, like `EitherT[Eval, Throwable, ?]` or `IO`.
 
+
+#### `Activating` typeclass
+
+`Activating[F[_]]` activates given span arround execution `F`.
+
+```scala
+/** Run `F ~> F` activating given span. */
+trait Activating[F[_]] {
+  def apply(
+    span: Span,
+    finishSpanOnClose: Boolean = false,
+    onClose: Either[Throwable, Any] => Span => Unit = _ => _ => {}
+  ): F ~> F
+}
+```
+
+There is auto derivation of `Activating` instances for types that are both `cats.Defer` and `cats.MonadError`, like `EitherT[Eval, Throwable, ?]` or `IO`.
+
+
 ### Syntax
 
 #### `trace`
@@ -40,3 +59,23 @@ Is provided for input `F0[A]` by an implicit class if there is non-ambiguous `Tr
 ```scala
   IO { ??? }.tracing("IO")
 ```
+
+
+#### `activate`
+```scala
+def activate[R](span: Span, finishSpanOnClose: Boolean = false)(r: => R)(implicit tracer: Tracer): R
+```
+
+Defined in package object `com.gihub.fehu.opentracing`, `activate` registers given span with `Tracer`'s scope manager before execution and closes the scope in the end.
+
+#### `activating`
+Implicit syntax for types with instances of `Activating`.
+
+```scala
+IO { ... }.activating(span)
+```
+
+
+
+
+
