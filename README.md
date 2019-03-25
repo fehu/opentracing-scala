@@ -75,7 +75,37 @@ Implicit syntax for types with instances of `Activating`.
 IO { ... }.activating(span)
 ```
 
+#### logging
+Implicit `com.github.fehu.opentracing.SpanOps` defines more logging syntax for `Span`.
 
+## Akka
 
+#### `TracingActor`
+The actor stores and processes scopes received inside `TracedMessage`.
+The received span can be accessed with `actorSpan()` method (thread usnafe).
 
+Extensions:
+- `TracingActor.Activating` 
+  The actor activates and closes a scope around its `receive` on receival of `TracedMessage`.
+- `TracingActor.ChildSpan`
+  The actor creates a child span on receival of `TracedMessage`.
+- `TracingActor.ActivatingChildSpan`
+  The actor creates a child span, activates and finishes it around its `receive` on receival of `TracedMessage`.
+- `TracingActor.AlwaysChildSpan`
+  The actor creates a child span for any message, with no parent if the message didn't contain one.
+
+-----------------------
+
+Package `com.github.fehu.opentracing.akka` provides syntax for tracing messages sent to actors.
+
+#### `ask`
+```scala
+ask(actor, "Hello!")
+  .tracing("Introducing", tags = ...)
+```
+
+#### `TracingLoggingAdapter`
+An re-implementation of akka's `LoggingAdapter` (uses `abstract override`) that sends log enties both to original adapter and currently active span.
+
+  
 
