@@ -41,3 +41,14 @@ lazy val testDependencies = Seq(
   "io.opentracing" % "opentracing-mock" % opentracingVersion % Test
 )
 
+
+
+// Publishing
+
+ThisBuild / publishTo := Some("Artifactory Realm" at "http://artifactory.arkondata.com/artifactory/sbt-dev")
+ThisBuild / credentials += Credentials(
+  "Artifactory Realm",
+  "artifactory.arkondata.com",
+  sys.env.getOrElse("ARTIFACTORY_USER", ""),
+  sys.env.getOrElse("ARTIFACTORY_PASSWORD", "")
+)
