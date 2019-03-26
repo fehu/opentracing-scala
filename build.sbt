@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion     := "2.12.8"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val opentracingVersion = "0.31.0"
