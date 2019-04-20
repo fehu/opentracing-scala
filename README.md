@@ -109,3 +109,18 @@ An re-implementation of akka's `LoggingAdapter` (uses `abstract override`) that 
 
   
 
+
+# opentracing-jaeger-scalac-implicits
+
+**Compiler plugin** that traces _implicit searches_ performed by scalac
+and reports them to local jaegertracing backend.
+
+
+#### Usage 
+- Put to your `build.sbt`
+    ```sbtshell
+    addCompilerPlugin("com.github.fehu" %% "opentracing-jaeger-scalac-implicits" % "0.1.0")
+    ```
+- Run, for example, [all-in-one](https://www.jaegertracing.io/docs/1.8/getting-started/#all-in-one) jaeger backend with docker
+- Compile your project
+- See the traces at http://localhost:16686

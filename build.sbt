@@ -1,3 +1,5 @@
+// scalac plugin has its own version
+
 ThisBuild / scalaVersion     := "2.12.8"
 ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "com.github.fehu"
@@ -7,7 +9,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     publishArtifact := false
   )
-  .aggregate(scala, akka)
+  .aggregate(scala, akka, compilerPlugin)
 
 lazy val scala = (project in file("scala"))
   .settings(
@@ -36,3 +38,6 @@ lazy val testDependencies = Seq(
   Dependencies.`opentracing-mock` % Test
 )
 
+
+// Has its own configuration file (and own version)
+lazy val compilerPlugin = project in file("compiler-plugin")
