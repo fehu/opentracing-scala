@@ -22,19 +22,34 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
   class ImplicitsTracingAnalyzer extends analyzer.AnalyzerPlugin {
     override def pluginsNotifyImplicitSearch(search: global.analyzer.ImplicitSearch): Unit = {
       val pos = search.pos
-      val line = if (pos.source != NoSourceFile) pos.lineContent else "<NoSourceFile>"
+      val code = if (pos.source != NoSourceFile) pos.lineContent else "<NoSourceFile>"
       tracer
         .buildSpan(showShort(search.pt))
         .withTag("type", search.pt.safeToString)
         .withTag("file", pos.source.path)
-        .withTag("line", line)
+        .withTag("line", pos.line)
+        .withTag("code", code)
         .withTag("pos",  pos.toString)
         .startActive(true)
       super.pluginsNotifyImplicitSearch(search)
     }
 
     override def pluginsNotifyImplicitSearchResult(result: global.analyzer.SearchResult): Unit = {
-      closeScopeSafe(tracer.scopeManager.active())
+      val scope = tracer.scopeManager.active()
+      if (scope ne null) {
+        val span = scope.span()
+        span.setTag("result", result.toString)
+        span.setTag("isSuccess", result.isSuccess)
+        val symb = result.tree.symbol
+        val providedBy = if (symb eq null) typeNames.NO_NAME.toString
+                         else {
+                            val rt = result.tree.tpe.resultType
+                            val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
+                            s"${symb.kindString} ${symb.fullNameString}$targs"
+                        }
+        span.setTag("provided by", providedBy)
+      }
+      closeScopeSafe(scope)
       super.pluginsNotifyImplicitSearchResult(result)
     }
 
