@@ -6,8 +6,8 @@ import io.opentracing.Span
 
 
 trait TracingLoggingAdapter extends LoggingAdapter {
-  protected def span: Span
-  lazy val spanLog = new SpanLog(span)
+  protected def span(): Span
+  lazy val spanLog = new SpanLog(() => span())
 
   abstract override protected def notifyError(message: String): Unit = {
     super.notifyError(message)
