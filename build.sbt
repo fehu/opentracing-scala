@@ -41,3 +41,14 @@ lazy val testDependencies = Seq(
 
 // Has its own configuration file (and own version)
 lazy val compilerPlugin = project in file("compiler-plugin")
+
+
+// Publishing
+
+ThisBuild / publishTo := Some("Artifactory Realm" at "http://artifactory.arkondata.com/artifactory/sbt-dev")
+ThisBuild / credentials += Credentials(
+  "Artifactory Realm",
+  "artifactory.arkondata.com",
+  sys.env.getOrElse("ARTIFACTORY_USER", ""),
+  sys.env.getOrElse("ARTIFACTORY_PASSWORD", "")
+)
