@@ -15,8 +15,8 @@ class SpanLog(span: () => Span) {
 
 object SpanLog {
   def error(span: Span, err: Throwable, message: String, fields: (String, Any)*): Unit =
-    log(span, "Error", message, ("error" -> err) +: fields: _*)
-  def error(span: Span, message: String, fields: (String, Any)*): Unit = log(span, "Error", message, fields: _*)
+    log(span, "Error", message, ("event" -> "error") +: ("error" -> err) +: fields: _*)
+  def error(span: Span, message: String, fields: (String, Any)*): Unit = log(span, "Error", message, ("event" -> "error") +: fields: _*)
   def warn (span: Span, message: String, fields: (String, Any)*): Unit = log(span, "Warning", message, fields: _*)
   def info (span: Span, message: String, fields: (String, Any)*): Unit = log(span, "Info", message, fields: _*)
   def debug(span: Span, message: String, fields: (String, Any)*): Unit = log(span, "Debug", message, fields: _*)
