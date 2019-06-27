@@ -2,7 +2,7 @@ package com.github.fehu.opentracing
 
 import scala.concurrent.ExecutionContext
 
-import _root_.akka.actor.ActorRef
+import _root_.akka.actor.{ ActorContext, ActorRef }
 import _root_.akka.util.Timeout
 import cats.Id
 import io.opentracing.{ Span, Tracer }
@@ -31,4 +31,9 @@ package object akka {
 
 
   implicit def tracingMessage(implicit setup: Tracing.TracingSetup): TracingMessage = new TracingMessage
+
+  implicit class ForwardTracingOps(ref: ActorRef) {
+    def forwardTracing(message: Any)(implicit context: ActorContext, tracer: Tracer): Unit =
+      ref.tell(TracedMessage(message, tracer.activeSpan()), context.sender())
+  }
 }
