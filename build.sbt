@@ -1,7 +1,7 @@
 // scalac plugin has its own version
 
 ThisBuild / scalaVersion     := "2.12.8"
-ThisBuild / version          := "0.1.2"
+ThisBuild / version          := "0.1.3"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val root = (project in file("."))
@@ -9,7 +9,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     publishArtifact := false
   )
-  .aggregate(scala, akka, compilerPlugin)
+  .aggregate(scala, akka)
 
 lazy val scala = (project in file("scala"))
   .settings(
