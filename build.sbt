@@ -1,7 +1,7 @@
 // scalac plugin has its own version
 
 ThisBuild / scalaVersion     := "2.12.8"
-ThisBuild / version          := "0.1.3"
+ThisBuild / version          := "0.1.4"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val root = (project in file("."))

@@ -31,7 +31,7 @@ trait TracingActor extends MessageInterceptingActor {
       message
   }
 
-  protected def afterReceive(): Unit = {
+  protected def afterReceive(maybeError: Option[Throwable]): Unit = {
     _span = None
   }
 }
@@ -49,10 +49,18 @@ object TracingActor {
       tracer.scopeManager().activate(span, finishSpanOnClose)
     }
 
-    override protected def afterReceive(): Unit = {
-      util.closeScopeSafe(tracer.scopeManager().active())
+    override protected def afterReceive(maybeError: Option[Throwable]): Unit = {
+      maybeError.foreach(err => util
+        .safe(actorSpan().orNull)(_
+          .setTag("error", true)
+          .setTag("error.message", err.getMessage)
+        )
+      )
+      val activeScope = tracer.scopeManager().active()
+      val sameSpan = actorSpan() == Option(activeScope).map(_.span())
       util.finishSpanSafe(actorSpan().orNull)
-      super.afterReceive()
+      if (!sameSpan) util.closeScopeSafe(activeScope)
+      super.afterReceive(maybeError)
     }
   }
 
