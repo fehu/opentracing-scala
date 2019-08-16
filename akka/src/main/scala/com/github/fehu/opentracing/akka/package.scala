@@ -32,7 +32,13 @@ package object akka {
 
   implicit def tracingMessage(implicit setup: Tracing.TracingSetup): TracingMessage = new TracingMessage
 
-  implicit class ForwardTracingOps(ref: ActorRef) {
+  implicit class TracingMessagesOps(ref: ActorRef) {
+    def tellTracing(message: Any)(implicit context: ActorContext, tracer: Tracer): Unit =
+      ref.tell(TracedMessage(message, tracer.activeSpan()), context.self)
+
+    /** Alias for [[tellTracing]]. */
+    def !*(message: Any)(implicit context: ActorContext, tracer: Tracer): Unit = tellTracing(message)
+
     def forwardTracing(message: Any)(implicit context: ActorContext, tracer: Tracer): Unit =
       ref.tell(TracedMessage(message, tracer.activeSpan()), context.sender())
   }
