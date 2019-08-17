@@ -45,7 +45,7 @@ lazy val compilerPlugin = project in file("compiler-plugin")
 
 // Publishing
 
-ThisBuild / publishTo := Some("Artifactory Realm" at "http://artifactory.arkondata.com/artifactory/sbt-dev")
+ThisBuild / publishTo := Some("Artifactory Realm" at "https://artifactory.arkondata.com/artifactory/sbt-dev")
 ThisBuild / credentials += Credentials(
   "Artifactory Realm",
   "artifactory.arkondata.com",
