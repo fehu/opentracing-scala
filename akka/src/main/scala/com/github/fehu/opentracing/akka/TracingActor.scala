@@ -20,11 +20,12 @@ trait TracingActor extends MessageInterceptingActor {
   protected def onNoSpanReceived(message: Any): Unit = {}
 
   protected def interceptIncoming(message: Any): Any = message match {
-    case TracedMessage(msg, span0) =>
-      Option(span0).foreach{ span =>
-        _span = Some(span)
-        onSpanReceived(msg, span)
-      }
+    case TracedMessage(msg, span) if span ne null =>
+      _span = Some(span)
+      onSpanReceived(msg, span)
+      msg
+    case TracedMessage(msg, _) =>
+      onNoSpanReceived(msg)
       msg
     case _ =>
       onNoSpanReceived(message)
@@ -46,7 +47,12 @@ object TracingActor {
 
     override protected def onSpanReceived(message: Any, span: Span): Unit = {
       super.onSpanReceived(message, span)
-      tracer.scopeManager().activate(span, finishSpanOnClose)
+      activate(span)
+    }
+
+    override protected def onNoSpanReceived(message: Any): Unit = {
+      super.onNoSpanReceived(message)
+      actorSpan().foreach(activate)
     }
 
     override protected def afterReceive(maybeError: Option[Throwable]): Unit = {
@@ -62,6 +68,8 @@ object TracingActor {
       if (!sameSpan) util.closeScopeSafe(activeScope)
       super.afterReceive(maybeError)
     }
+
+    private def activate(span: Span) = tracer.scopeManager().activate(span, finishSpanOnClose)
   }
 
   // The order of inheritance is important!
