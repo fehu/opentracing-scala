@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 

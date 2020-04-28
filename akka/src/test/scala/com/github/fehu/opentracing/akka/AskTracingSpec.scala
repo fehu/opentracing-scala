@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing.akka
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
