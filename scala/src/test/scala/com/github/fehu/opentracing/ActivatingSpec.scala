@@ -7,10 +7,9 @@ import cats.Eval
 import cats.data.EitherT
 import cats.effect.IO
 import com.github.fehu.opentracing.concurrent.TracingExecutionContext
-import io.opentracing.mock.MockSpan.MockContext
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class ActivatingSpec extends FreeSpec with Spec {
+class ActivatingSpec extends AnyFreeSpec with Spec {
 
   def activeSpan() = mockTracer.activeSpan()
 

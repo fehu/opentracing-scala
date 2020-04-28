@@ -27,6 +27,6 @@ object Dependencies {
 
     lazy val akka           = "2.6.4"
 
-    lazy val scalatest      = "3.0.5"
+    lazy val scalatest      = "3.1.1"
   }
 }
