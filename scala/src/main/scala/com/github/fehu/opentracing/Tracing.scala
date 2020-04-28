@@ -132,24 +132,27 @@ object Tracing extends TracingEvalLaterImplicits {
   }
 
 
-  implicit def tracingDeferMonadError[F[_]](implicit setup: TracingSetup, D: Defer[F], M: MonadError[F, Throwable]): Tracing[F, F] =
+  implicit def tracingDeferMonadError[F[_]](implicit setup: TracingSetup, D: Defer[F], M: MonadError[F, Throwable], t: Tracer): Tracing[F, F] =
     new Tracing[F, F] {
       protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): F ~> F = {
         val builder = setup.beforeStart(spanBuilder)
         λ[F ~> F] { fa =>
           for {
-            scopeOrSpan <- defer[F]{ if (activate) Left(builder.startActive(true)) else Right(builder.start()) }
-            _ <- M.pure(Try { setup.justAfterStart(scopeOrSpan.leftMap(_.span()).merge) })
+            span <- defer[F]{ builder.start() }
+            scope <- defer[F]{ if (activate) Some(t.activateSpan(span)) else None }
+            _ <- M.pure(Try { setup.justAfterStart(span) })
             attempt <- fa.attempt
-            _ <- M.pure { closeScopeOrSpan(scopeOrSpan, setup.beforeStop(attempt)) }
+            _ <- M.pure { closeScopeAndSpan(span, scope, setup.beforeStop(attempt)) }
             result <- M.pure(attempt).rethrow
           } yield result
         }
       }
-      private def closeScopeOrSpan(scopeOrSpan: Either[Scope, Span], before: Span => Unit): Unit = scopeOrSpan.fold(
-        scope => { try before(scope.span()) finally util.closeScopeSafe(scope) },
-        span  => { try before(span)         finally util.finishSpanSafe(span) }
-      )
+      private def closeScopeAndSpan(span: Span, scope: Option[Scope], before: Span => Unit): Unit =
+        try before(span)
+        finally {
+          util.finishSpanSafe(span)
+          scope.foreach(util.closeScopeSafe)
+        }
 
       protected def noTrace: F ~> F = FunctionK.id[F]
     }

@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing.akka
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -9,9 +10,10 @@ import com.github.fehu.opentracing.trace
 import com.github.fehu.opentracing.Spec
 import com.github.fehu.opentracing.Tracing.TracingSetup.Dummy._
 import io.opentracing.Tracer
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
 
-class AskTracingSpec extends FreeSpec with Spec with BeforeAndAfterAll {
+class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
   import AskTracingSpec._
 
   implicit val system = ActorSystem("AskTracingSpec")

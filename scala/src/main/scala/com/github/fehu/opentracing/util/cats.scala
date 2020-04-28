@@ -21,8 +21,8 @@ object cats extends CatsEvalEitherTMonadError {
 
 trait CatsEvalEitherTMonadError {
   private lazy val originalcatsEvalTMonadError = EitherT.catsDataMonadErrorForEitherT[Eval, Throwable]
-  implicit lazy val catsEvalEitherTMonadError: MonadError[EitherT[Eval, Throwable, ?], Throwable] =
-    new MonadError[EitherT[Eval, Throwable, ?], Throwable] {
+  implicit lazy val catsEvalEitherTMonadError: MonadError[EitherT[Eval, Throwable, *], Throwable] =
+    new MonadError[EitherT[Eval, Throwable, *], Throwable] {
       def pure[A](x: A): EitherT[Eval, Throwable, A] =
         originalcatsEvalTMonadError.pure(x)
       def flatMap[A, B](fa: EitherT[Eval, Throwable, A])(f: A => EitherT[Eval, Throwable, B]): EitherT[Eval, Throwable, B] =

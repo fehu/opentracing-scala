@@ -19,14 +19,14 @@ package object opentracing {
   }
 
 
-  def activate[R](span: Span, finishSpanOnClose: Boolean = false)(r: => R)(implicit tracer: Tracer): R = {
-    val scope = util.safe(span)(tracer.scopeManager().activate(_, finishSpanOnClose))
+  def activate[R](span: Span)(r: => R)(implicit tracer: Tracer): R = {
+    val scope = util.safe(span)(tracer.scopeManager().activate)
     try r
     finally scope.foreach(util.closeScopeSafe)
   }
 
   implicit class ActivateOps[F[_], A](fa: F[A])(implicit activate: Activating[F]) {
-    def activating(span: Span, finishSpanOnClose: Boolean = false): F[A] = activate(span, finishSpanOnClose)(fa)
+    def activating(span: Span): F[A] = activate(span)(fa)
   }
 
 }

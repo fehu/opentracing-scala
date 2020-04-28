@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -7,9 +8,10 @@ import cats.{ Eval, Later }
 import cats.effect.IO
 import com.github.fehu.opentracing.Tracing.TracingSetup
 import io.opentracing.Tracer
-import org.scalatest.{ Assertion, FreeSpec }
+import org.scalatest.Assertion
+import org.scalatest.freespec.AnyFreeSpec
 
-class TraceSpec extends FreeSpec with Spec {
+class TraceSpec extends AnyFreeSpec with Spec {
 
   implicit val tracingSetup: TracingSetup = TracingSetup.Dummy.DummyTracingSetup
 

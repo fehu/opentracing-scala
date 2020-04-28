@@ -1,7 +1,11 @@
 // scalac plugin has its own version
 
-ThisBuild / scalaVersion     := "2.12.8"
-ThisBuild / version          := "0.1.6"
+val scala212 = "2.12.11"
+val scala213 = "2.13.1"
+val crossScala = List(scala212, scala213)
+
+ThisBuild / scalaVersion     := scala213
+ThisBuild / version          := "0.1.7"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val root = (project in file("."))
@@ -20,7 +24,8 @@ lazy val scala = (project in file("scala"))
       Dependencies.`cats-effect` % Test
     ),
     libraryDependencies ++= testDependencies,
-    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.binary),
+    crossScalaVersions := crossScala,
+    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
   )
 
 lazy val akka = (project in file("akka"))
@@ -28,7 +33,8 @@ lazy val akka = (project in file("akka"))
     name := "opentracing-akka",
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies,
-    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.binary)
+    crossScalaVersions := crossScala,
+    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
   )
   .dependsOn(scala % "compile->compile;test->test")
 
@@ -40,7 +46,9 @@ lazy val testDependencies = Seq(
 
 
 // Has its own configuration file (and own version)
-lazy val compilerPlugin = project in file("compiler-plugin")
+lazy val compilerPlugin = project in file("compiler-plugin") settings (
+  crossScalaVersions := crossScala
+)
 
 
 // Publishing
