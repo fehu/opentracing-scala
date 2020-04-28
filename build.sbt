@@ -5,7 +5,7 @@ val scala213 = "2.13.1"
 val crossScala = List(scala212, scala213)
 
 ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.1.7-SNAPSHOT"
+ThisBuild / version          := "0.1.7"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val root = (project in file("."))
