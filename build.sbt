@@ -20,7 +20,7 @@ lazy val scala = (project in file("scala"))
       Dependencies.`cats-effect` % Test
     ),
     libraryDependencies ++= testDependencies,
-    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.binary)
+    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
   )
 
 lazy val akka = (project in file("akka"))
@@ -28,7 +28,7 @@ lazy val akka = (project in file("akka"))
     name := "opentracing-akka",
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies,
-    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.binary)
+    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
   )
   .dependsOn(scala % "compile->compile;test->test")
 
