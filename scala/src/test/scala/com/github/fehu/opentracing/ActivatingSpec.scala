@@ -97,19 +97,63 @@ class ActivatingSpec extends FreeSpec with Spec {
       finished.tags().asScala shouldBe fooBarMap
     }
 
-    "IO from Future" in {
+    "IO from (existing!) Future" in {
       assume(activeSpan() eq null)
       val tracingExec = TracingExecutionContext.Delegate.active(ExecutionContext.global)
+      implicit def cs = IO.contextShift(tracingExec.context)
       import tracingExec.context
-      val scope = mockTracer.buildSpan("test").startActive(true)
+      val span = mockTracer.buildSpan("test").start()
+      val scope = mockTracer.activateSpan(span)
 
       val future = Future { setFooBarTag(); Thread.sleep(30) }
       val io = IO.fromFuture(IO.pure(future))
       Await.result(io.unsafeToFuture(), 50.millis)
+      span.finish()
       scope.close()
       val Seq(finished) = finishedSpans()
-      finished.context().spanId() shouldBe scope.span().context().asInstanceOf[MockContext].spanId()
+      finished.context().spanId() shouldBe span.context().spanId()
       finished.tags().asScala shouldBe fooBarMap
+    }
+
+    "IO from Future" in {
+      assume(activeSpan() eq null)
+      val tracingExec = TracingExecutionContext.Delegate.active(ExecutionContext.global)
+      implicit def cs = IO.contextShift(tracingExec.context)
+      import tracingExec.context
+      val span = mockTracer.buildSpan("test").start()
+      val scope = mockTracer.activateSpan(span)
+
+      val io = IO.fromFuture(IO{
+        Future { setFooBarTag(); Thread.sleep(30) }
+      })
+      Await.result(io.unsafeToFuture(), 50.millis)
+      span.finish()
+      scope.close()
+      val Seq(finished) = finishedSpans()
+      finished.context().spanId() shouldBe span.context().spanId()
+      finished.tags().asScala shouldBe fooBarMap
+    }
+
+    "IO" in {
+      assume(activeSpan() eq null)
+      val span = mockTracer.buildSpan("test").start()
+      val scope = mockTracer.activateSpan(span)
+
+      val io = IO {
+        setFooBarTag()
+        val span = mockTracer.buildSpan("test-2").start()
+        Thread.sleep(20)
+        span.finish()
+      }
+      io.unsafeRunSync()
+      span.finish()
+      scope.close()
+      val Seq(finished2, finished1) = finishedSpans()
+      finished1.operationName() shouldBe "test"
+      finished1.context().spanId() shouldBe span.context().spanId()
+      finished1.tags().asScala shouldBe fooBarMap
+      finished2.operationName() shouldBe "test-2"
+      finished2.parentId() shouldBe finished1.context().spanId()
     }
   }
 
