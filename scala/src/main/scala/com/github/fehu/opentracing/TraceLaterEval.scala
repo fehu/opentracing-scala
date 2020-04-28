@@ -22,7 +22,7 @@ object TraceLaterEval {
 
 
 trait TracingEvalLaterImplicits extends CatsEvalEitherTMonadError {
-  implicit def tracingEvalLater(implicit setup: Tracing.TracingSetup): Tracing[Later, Eval] =
+  implicit def tracingEvalLater(implicit setup: Tracing.TracingSetup, t: Tracer): Tracing[Later, Eval] =
     Tracing.tracingDeferMonadError[EitherT[Eval, Throwable, ?]]
       .contramap[Later](EitherT.liftK[Eval, Throwable] compose λ[Later ~> Eval](l => l))
       .map(λ[EitherT[Eval, Throwable, ?] ~> Eval](_.valueOr(throw _)))

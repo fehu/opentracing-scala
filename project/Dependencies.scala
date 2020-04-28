@@ -18,14 +18,14 @@ object Dependencies {
   lazy val scalatest    = "org.scalatest"     %% "scalatest"  % Version.scalatest
 
   object Version {
-    lazy val opentracing    = "0.31.0"
+    lazy val opentracing    = "0.33.0"
     lazy val jaegerClient   = "0.33.1"
 
-    lazy val cats           = "1.6.0"
-    lazy val catsEffect     = "1.2.0"
+    lazy val cats           = "2.1.1"
+    lazy val catsEffect     = "2.1.3"
     lazy val kindProjector  = "0.9.9"
 
-    lazy val akka           = "2.5.16"
+    lazy val akka           = "2.6.4"
 
     lazy val scalatest      = "3.0.5"
   }

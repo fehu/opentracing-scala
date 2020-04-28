@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.akka
 
 import akka.fehu.MessageInterceptingActor
 import com.github.fehu.opentracing.{ Tracing, util }
-import io.opentracing.{ Span, Tracer }
+import io.opentracing.{ Scope, Span, Tracer }
 
 
 final case class TracedMessage[A](message: A, span: Span)
@@ -16,7 +16,7 @@ trait TracingActor extends MessageInterceptingActor {
 
   protected[TracingActor] def setSpan(span: Span): Unit = _span = Option(span)
 
-  protected def onSpanReceived(message: Any, span: Span): Unit = {}
+  protected def onSpanReceived(message: Any, span: Span): Unit = setSpan(span)
   protected def onNoSpanReceived(message: Any): Unit = {}
 
   protected def interceptIncoming(message: Any): Any = message match {
@@ -41,9 +41,10 @@ trait TracingActor extends MessageInterceptingActor {
 object TracingActor {
 
   trait Activating extends TracingActor {
-    def finishSpanOnClose: Boolean = true
+    def finishSpan: Boolean = true
 
     def activeSpan(): Option[Span] = Option(tracer.activeSpan())
+    private var _scope: Option[Scope] = None
 
     override protected def onSpanReceived(message: Any, span: Span): Unit = {
       super.onSpanReceived(message, span)
@@ -62,14 +63,16 @@ object TracingActor {
           .setTag("error.message", err.getMessage)
         )
       )
-      val activeScope = tracer.scopeManager().active()
-      val sameSpan = actorSpan() == Option(activeScope).map(_.span())
+      _scope.foreach(_.close())
+      _scope = None
+      val activeSpan = tracer.scopeManager().activeSpan()
+      val sameSpan = actorSpan() contains activeSpan
       util.finishSpanSafe(actorSpan().orNull)
-      if (!sameSpan) util.closeScopeSafe(activeScope)
+      if (!sameSpan) util.finishSpanSafe(activeSpan)
       super.afterReceive(maybeError)
     }
 
-    private def activate(span: Span) = tracer.scopeManager().activate(span, finishSpanOnClose)
+    private def activate(span: Span): Unit = _scope = Some{ tracer.scopeManager().activate(span) }
   }
 
   // The order of inheritance is important!

@@ -15,7 +15,6 @@ import io.opentracing.{ Span, Tracer }
 trait Activating[F[_]] {
   def apply(
     span: Span,
-    finishSpanOnClose: Boolean = false,
     onClose: Either[Throwable, Any] => Span => Unit = _ => _ => {}
   ): F ~> F
 }
@@ -28,11 +27,11 @@ object Activating extends CatsEvalEitherTMonadError {
     M: MonadError[F, Throwable],
     t: Tracer
   ): Activating[F] =
-    (span: Span, finishSpanOnClose: Boolean, onClose: Either[Throwable, Any] => Span => Unit) => λ[F ~> F] { fa =>
+    (span: Span, onClose: Either[Throwable, Any] => Span => Unit) => λ[F ~> F] { fa =>
       for {
-        scope <- defer[F] { util.safe(span)(t.scopeManager().activate(_, finishSpanOnClose)) }
+        scope <- defer[F] { util.safe(span)(t.scopeManager().activate) }
         attempt <- fa.attempt
-        _ <- M.pure { scope.foreach { s => try util.safe(s.span())(onClose(attempt)) finally util.closeScopeSafe(s) } }
+        _ <- M.pure { scope.foreach { s => try util.safe(span)(onClose(attempt)) finally util.closeScopeSafe(s) } }
         a <- M.pure(attempt).rethrow
       } yield a
     }

@@ -30,7 +30,6 @@ There is auto derivation of `Tracing` instances for types that are both `cats.De
 trait Activating[F[_]] {
   def apply(
     span: Span,
-    finishSpanOnClose: Boolean = false,
     onClose: Either[Throwable, Any] => Span => Unit = _ => _ => {}
   ): F ~> F
 }
@@ -63,7 +62,7 @@ Is provided for input `F0[A]` by an implicit class if there is non-ambiguous `Tr
 
 #### `activate`
 ```scala
-def activate[R](span: Span, finishSpanOnClose: Boolean = false)(r: => R)(implicit tracer: Tracer): R
+def activate[R](span: Span)(r: => R)(implicit tracer: Tracer): R
 ```
 
 Defined in package object `com.gihub.fehu.opentracing`, `activate` registers given span with `Tracer`'s scope manager before execution and closes the scope in the end.
