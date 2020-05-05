@@ -10,33 +10,41 @@ import cats.syntax.either._
 import com.github.fehu.opentracing.{ Tracing, util }
 import io.opentracing.Tracer
 
-object AskTracing {
+final class AskTracing[F[_]](val build: (ActorRef, AskTracing.Sender) => Tracing[Id, F]) extends AnyVal {
+  def map[G[_]](fk: F ~> G): AskTracing[G] = new AskTracing((ref, sender) => build(ref, sender).map(fk))
+}
 
-  class Ops(ref: ActorRef, message: Any, sender: ActorRef)(
+object AskTracing {
+  type Sender = ActorRef
+
+  class Ops[F[_]](ref: ActorRef, message: Any, sender: ActorRef)(
     implicit
-    trace0: Tracing[Id, TracingMessage.MaybeDeferredTraced],
+    ask: AskTracing[F],
     tracer: Tracer,
     setup: Tracing.TracingSetup,
     timeout: Timeout,
     executionContext: ExecutionContext
   ) {
-
-    def tracing: Tracing.Interface[Future[Any]] = trace(message)
-
-    private def ask(msg: Any) = pattern.ask(ref, msg, sender)
-    private lazy val trace = trace0.map[λ[* => Future[Any]]](
-      λ[TracingMessage.MaybeDeferredTraced ~> λ[* => Future[Any]]]{
-        case Left(msg) => ask(msg)
-        case Right(later) =>
-          val msg = later.value
-          val future = ask(msg)
-          future.onComplete { res =>
-            try setup.beforeStop(Either.fromTry(res))(msg.span)
-            finally util.finishSpanSafe(msg.span)
-          }
-          future
-      }
-    )
+    def tracing: Tracing.Interface[F[Any]] = ask.build(ref, sender)(message)
   }
+
+
+  implicit def askTracingFuture(implicit setup: Tracing.TracingSetup, timeout: Timeout, ec: ExecutionContext): AskTracing[λ[* => () => Future[Any]]] =
+    new AskTracing((ref, sender) =>
+      tracingMessage.map[λ[* => () => Future[Any]]](
+        λ[TracingMessage.MaybeDeferredTraced ~> λ[* => () => Future[Any]]]{
+          case Left(msg) => () => pattern.ask(ref, msg, sender)
+          case Right(later) => () => {
+            val msg = later.value
+            val future = pattern.ask(ref, msg, sender)
+            future.onComplete { res =>
+              try setup.beforeStop(Either.fromTry(res))(msg.span)
+              finally util.finishSpanSafe(msg.span)
+            }
+            future
+          }
+        }
+      )
+    )
 
 }

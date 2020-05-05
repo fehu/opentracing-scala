@@ -39,7 +39,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
 
         val future = ask(testActor, "Hello!").tracing("Anyone there?")
         activeSpanOpt shouldBe None
-        val result = Await.result(future, 101.millis)
+        val result = Await.result(future(), 101.millis)
 
         activeSpanOpt shouldBe None
         result shouldBe 42
@@ -52,7 +52,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
 
         val future2 = ask(testActor, "Hello2").tracing("ABC")
         activeSpanOpt shouldBe None
-        val result2 = Await.result(future2, 101.millis)
+        val result2 = Await.result(future2(), 101.millis)
 
         activeSpanOpt shouldBe None
         result2 shouldBe 42
@@ -67,7 +67,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
 
         val result = trace.now("test ask") {
           val future = ask(testActor, "???").tracing("???")
-          Await.result(future, 101.millis)
+          Await.result(future(), 101.millis)
         }
         activeSpanOpt shouldBe None
         result shouldBe 42
@@ -86,7 +86,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
     activeSpanOpt shouldBe None
     val future = ask(actor, "activate").tracing("activating")
     activeSpanOpt shouldBe None
-    val result = Await.result(future, 101.millis)
+    val result = Await.result(future(), 101.millis)
 
     activeSpanOpt shouldBe None
     result shouldBe 50
@@ -106,7 +106,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
     activeSpanOpt shouldBe None
     val future = ask(actor, "why").tracing("asking", "what" -> "why")
     activeSpanOpt shouldBe None
-    val result = Await.result(future, 101.millis)
+    val result = Await.result(future(), 101.millis)
 
     activeSpanOpt shouldBe None
     result shouldBe "why"
