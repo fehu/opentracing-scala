@@ -10,8 +10,8 @@ import cats.syntax.either._
 import com.github.fehu.opentracing.{ Tracing, util }
 import io.opentracing.Tracer
 
-final class AskTracing[F[_]](val build: (ActorRef, AskTracing.Sender) => Tracing[Id, F]) extends AnyVal {
-  def map[G[_]](fk: F ~> G): AskTracing[G] = new AskTracing((ref, sender) => build(ref, sender).map(fk))
+final class AskTracing[F[_]](val build: (ActorRef, Timeout, ExecutionContext, AskTracing.Sender) => Tracing[Id, F]) extends AnyVal {
+  def map[G[_]](fk: F ~> G): AskTracing[G] = new AskTracing((ref, t, ec, sender) => build(ref, t, ec, sender).map(fk))
 }
 
 object AskTracing {
@@ -25,22 +25,22 @@ object AskTracing {
     timeout: Timeout,
     executionContext: ExecutionContext
   ) {
-    def tracing: Tracing.Interface[F[Any]] = ask.build(ref, sender)(message)
+    def tracing: Tracing.Interface[F[Any]] = ask.build(ref, timeout, executionContext, sender)(message)
   }
 
 
-  implicit def askTracingFuture(implicit setup: Tracing.TracingSetup, timeout: Timeout, ec: ExecutionContext): AskTracing[λ[* => () => Future[Any]]] =
-    new AskTracing((ref, sender) =>
+  implicit def askTracingFuture(implicit setup: Tracing.TracingSetup): AskTracing[λ[* => () => Future[Any]]] =
+    new AskTracing((ref, timeout, execContext, sender) =>
       tracingMessage.map[λ[* => () => Future[Any]]](
         λ[TracingMessage.MaybeDeferredTraced ~> λ[* => () => Future[Any]]]{
-          case Left(msg) => () => pattern.ask(ref, msg, sender)
+          case Left(msg) => () => pattern.ask(ref, msg, sender)(timeout)
           case Right(later) => () => {
             val msg = later.value
-            val future = pattern.ask(ref, msg, sender)
+            val future = pattern.ask(ref, msg, sender)(timeout)
             future.onComplete { res =>
               try setup.beforeStop(Either.fromTry(res))(msg.span)
               finally util.finishSpanSafe(msg.span)
-            }
+            }(execContext)
             future
           }
         }
