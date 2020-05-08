@@ -50,6 +50,7 @@ trait Tracing[F0[_], F1[_]] {
 }
 
 object Tracing extends TracingEvalLaterImplicits {
+  type Endo[F[_]] = Tracing[F, F]
 
   /** Common interface for building traces. Starts active by default. */
   trait Interface[Out] {
