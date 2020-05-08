@@ -11,7 +11,9 @@ object Dependencies {
 
   lazy val `cats-core`        = "org.typelevel"  %% "cats-core"        % Version.cats
   lazy val `cats-effect`      = "org.typelevel"  %% "cats-effect"      % Version.catsEffect
-  lazy val `kind-projector`   = "org.typelevel"  %% "kind-projector"   % Version.kindProjector
+
+  lazy val `kind-projector`   = "org.typelevel"  %% "kind-projector"     % Version.kindProjector cross CrossVersion.full
+  lazy val `monadic-for`      = "com.olegpy"     %% "better-monadic-for" % Version.monadicFor
 
   lazy val `akka-actor` = "com.typesafe.akka" %% "akka-actor" % Version.akka
 
@@ -23,7 +25,9 @@ object Dependencies {
 
     lazy val cats           = "2.1.1"
     lazy val catsEffect     = "2.1.3"
+
     lazy val kindProjector  = "0.11.0"
+    lazy val monadicFor     = "0.3.1"
 
     lazy val akka           = "2.6.4"
 

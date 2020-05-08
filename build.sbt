@@ -8,9 +8,10 @@ ThisBuild / scalaVersion     := scala213
 ThisBuild / version          := "0.1.8.3"
 ThisBuild / organization     := "com.github.fehu"
 
-inThisBuild(
-  addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
-)
+inThisBuild(Seq(
+  addCompilerPlugin(Dependencies.`kind-projector`),
+  addCompilerPlugin(Dependencies.`monadic-for`)
+))
 
 lazy val root = (project in file("."))
   .settings(
