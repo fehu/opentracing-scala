@@ -5,7 +5,7 @@ val scala213 = "2.13.1"
 val crossScala = List(scala212, scala213)
 
 ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.1.8.1"
+ThisBuild / version          := "0.1.8.2"
 ThisBuild / organization     := "com.github.fehu"
 
 lazy val root = (project in file("."))
@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     publishArtifact := false
   )
-  .aggregate(scala, akka)
+  .aggregate(scala, akka, effect)
 
 lazy val scala = (project in file("scala"))
   .settings(
@@ -32,6 +32,16 @@ lazy val akka = (project in file("akka"))
   .settings(
     name := "opentracing-akka",
     libraryDependencies += Dependencies.`akka-actor`,
+    libraryDependencies ++= testDependencies,
+    crossScalaVersions := crossScala,
+    addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
+  )
+  .dependsOn(scala % "compile->compile;test->test")
+
+lazy val effect = (project in file("effect"))
+  .settings(
+    name := "opentracing-effect",
+    libraryDependencies += Dependencies.`cats-effect`,
     libraryDependencies ++= testDependencies,
     crossScalaVersions := crossScala,
     addCompilerPlugin(Dependencies.`kind-projector` cross CrossVersion.full)
