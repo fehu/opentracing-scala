@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     publishArtifact := false
   )
-  .aggregate(scala, akka, effect, akkaEffect)
+  .aggregate(scala, akka, effect, akkaEffect, fs2)
 
 lazy val scala = (project in file("scala"))
   .settings(
@@ -51,6 +51,13 @@ lazy val akkaEffect = (project in file("akka-effect"))
     name := "opentracing-akka-effect"
   )
   .dependsOn(akka, effect)
+
+lazy val fs2 = (project in file("fs2"))
+  .settings(
+    name := "opentracing-fs2",
+    libraryDependencies += Dependencies.`fs2-core`
+  )
+  .dependsOn(effect)
 
 
 lazy val testDependencies = Seq(
