@@ -4,6 +4,9 @@ import cats.~>
 import cats.arrow.FunctionK
 import cats.effect.{ ExitCase, Sync }
 import cats.effect.syntax.bracket._
+import cats.instances.option._
+import cats.syntax.flatMap._
+import cats.syntax.foldable._
 import cats.syntax.functor._
 import _root_.fs2.Stream
 import com.github.fehu.opentracing.Tracing.TracingSetup
@@ -22,14 +25,18 @@ package object fs2 {
             for {
               ((span, _), close) <- ResourceTracing.spanAndScopeResource1(spanBuilder, activate).allocated
               reportAndClose = (err: Throwable) => delay(setup.beforeStop(Left(err))(span)).guarantee(close)
-            } yield s.evalTap(e => delay(span.debug("next stream element", "element" -> e.toString)))
-              .onFinalizeCase {
-                case ExitCase.Completed  => close
-                case ExitCase.Error(err) => reportAndClose(err)
-                case ExitCase.Canceled   => reportAndClose(new Exception("Canceled"))
-              }
+            } yield s.onFinalizeCase {
+                        case ExitCase.Completed  => close
+                        case ExitCase.Error(err) => reportAndClose(err)
+                        case ExitCase.Canceled   => reportAndClose(new Exception("Canceled"))
+                      }
           }
         }
     }
+
+  def logStreamElems[F[_], A](s: Stream[F, A])(log: (SpanLog, A) => Unit)(implicit sync: Sync[F], t: Tracer): Stream[F, A] =
+    s.evalTap(a => effect.activeSpan.flatMap(spanOpt =>
+      spanOpt.traverse_(span => sync.delay(log(new SpanLog(() => span), a)))
+    ))
 
 }
