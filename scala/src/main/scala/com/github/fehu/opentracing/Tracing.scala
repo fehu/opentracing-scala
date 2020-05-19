@@ -11,7 +11,7 @@ import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import io.opentracing.{ Scope, Span, Tracer }
+import io.opentracing.{ Scope, Span, SpanContext, Tracer }
 import com.github.fehu.opentracing.util.cats.defer
 
 
@@ -24,7 +24,7 @@ trait Tracing[F0[_], F1[_]] {
   protected def noTrace: F0 ~> F1
 
   class InterfaceImpl[Out](mkOut: (F0 ~> F1) => Out)(implicit val tracer: Tracer) extends Interface[Out] {
-    def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out =
+    def apply(parent: Option[Either[Span, SpanContext]], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out =
       Tracing.Interface.impl(parent, activate, operation, tags)(tracer, (b, a) => mkOut(build(b, a)), mkOut(noTrace))
   }
 
@@ -54,26 +54,28 @@ object Tracing extends TracingEvalLaterImplicits {
 
   /** Common interface for building traces. Starts active by default. */
   trait Interface[Out] {
-    def apply(operation: String, tags: Tag*): Out                                  = apply(parent = None, activate = true, operation, buildTags(tags))
-    def apply(activate: Boolean, operation: String, tags: Tag*): Out               = apply(parent = None, activate, operation, buildTags(tags))
-    def apply(parent: Span, operation: String, tags: Tag*): Out                    = apply(Option(parent), activate = true, operation, buildTags(tags))
-    def apply(parent: Span, activate: Boolean, operation: String, tags: Tag*): Out = apply(Option(parent), activate, operation, buildTags(tags))
+    def apply(operation: String, tags: Tag*): Out                                         = apply(parent = None, activate = true, operation, buildTags(tags))
+    def apply(activate: Boolean, operation: String, tags: Tag*): Out                      = apply(parent = None, activate, operation, buildTags(tags))
+    def apply(parent: Span, operation: String, tags: Tag*): Out                           = apply(Some(Left(parent)), activate = true, operation, buildTags(tags))
+    def apply(parent: Span, activate: Boolean, operation: String, tags: Tag*): Out        = apply(Some(Left(parent)), activate, operation, buildTags(tags))
+    def apply(parent: SpanContext, operation: String, tags: Tag*): Out                    = apply(Some(Right(parent)), activate = true, operation, buildTags(tags))
+    def apply(parent: SpanContext, activate: Boolean, operation: String, tags: Tag*): Out = apply(Some(Right(parent)), activate, operation, buildTags(tags))
     private def buildTags(tags: Seq[Tag]): Map[String, TagValue] = tags.map(_.toPair).toMap
 
     def map[R](f: Out => R): Interface[R] = Interface.Mapped(this, f)
 
     val tracer: Tracer
-    def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out
+    def apply(parent: Option[Either[Span, SpanContext]], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out
   }
   object Interface {
     case class Mapped[T, R](original: Interface[T], f: T => R) extends Interface[R] {
       val tracer: Tracer = original.tracer
-      def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): R =
+      def apply(parent: Option[Either[Span, SpanContext]], activate: Boolean, operation: String, tags: Map[String, TagValue]): R =
         f(original(parent, activate, operation, tags))
     }
 
     type Activate = Boolean
-    def impl[Out](parent: Option[Span], activate: Activate, operation: String, tags: Map[String, TagValue])
+    def impl[Out](parent: Option[Either[Span, SpanContext]], activate: Activate, operation: String, tags: Map[String, TagValue])
                  (tracer: Tracer, build: (Tracer.SpanBuilder, Activate) => Out, noTrace: => Out): Out =
       if (tracer eq null) noTrace
       else {
@@ -82,7 +84,7 @@ object Tracing extends TracingEvalLaterImplicits {
           case (acc, (key, TagValue.Number(num))) => acc.withTag(key, num)
           case (acc, (key, TagValue.Boolean(b)))  => acc.withTag(key, b)
         }
-        val builder1 = parent.map(builder0.asChildOf).getOrElse(builder0)
+        val builder1 = parent.map(_.fold(builder0.asChildOf, builder0.asChildOf)).getOrElse(builder0)
         build(builder1, activate)
       }
   }
