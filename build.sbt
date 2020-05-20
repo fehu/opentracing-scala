@@ -1,11 +1,11 @@
 // scalac plugin has its own version
 
 val scala212 = "2.12.11"
-val scala213 = "2.13.1"
+val scala213 = "2.13.2"
 
 ThisBuild / crossScalaVersions := List(scala212, scala213)
 ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.1.8.5"
+ThisBuild / version          := "0.1.9"
 ThisBuild / organization     := "com.github.fehu"
 
 inThisBuild(Seq(
