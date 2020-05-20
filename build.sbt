@@ -78,3 +78,6 @@ ThisBuild / credentials += Credentials(
   sys.env.getOrElse("ARTIFACTORY_USER", ""),
   sys.env.getOrElse("ARTIFACTORY_PASSWORD", "")
 )
+
+// Fix `java.net.ProtocolException: Unexpected status line: 0` when publishing to artifactory
+ThisBuild / updateOptions := updateOptions.value.withGigahorse(false)
