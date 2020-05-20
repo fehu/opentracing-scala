@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.akka
 
 import akka.fehu.MessageInterceptingActor
 import com.github.fehu.opentracing.{ Tracing, util }
-import io.opentracing.{ Scope, Span, Tracer }
+import io.opentracing.{ Scope, Span, SpanContext, Tracer }
 
 
 final case class TracedMessage[A](message: A, span: Span)
@@ -87,7 +87,7 @@ object TracingActor {
       val tracer: Tracer = actor.tracer
 
       // `activate` is ignored
-      def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, Tracing.TagValue]): Tracer.SpanBuilder =
+      def apply(parent: Option[Either[Span, SpanContext]], activate: Boolean, operation: String, tags: Map[String, Tracing.TagValue]): Tracer.SpanBuilder =
         Tracing.Interface.impl(parent, activate, operation, tags)(tracer, (b, _) => b, sys.error("tracer is null"))
     }
 
