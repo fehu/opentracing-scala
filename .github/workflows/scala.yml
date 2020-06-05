@@ -20,6 +20,7 @@ jobs:
     - name: Setup GPG for signing artifacts
       env:
         GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+        GPG_TTY: $(tty)
       run: |
         mkdir -p ~/.gnupg/
         printf "$GPG_SECRET_KEY" | base64 --decode > ~/.gnupg/private.key
