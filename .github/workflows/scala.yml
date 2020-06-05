@@ -17,6 +17,8 @@ jobs:
         java-version: 1.8
     # - name: Run tests	
     #  run: sbt test
+    - name: Show GPG version
+      run: gpg --version
     - name: Setup GPG for signing artifacts
       env:
         GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
