@@ -95,3 +95,8 @@ ThisBuild / credentials += Credentials(
   sys.env.getOrElse("SONATYPE_USER", ""),
   sys.env.getOrElse("SONATYPE_PWD", "")
 )
+
+Global / concurrentRestrictions := Seq(
+  Tags.limit(Tags.CPU, 1),
+  Tags.limit(Tags.Test, 1)
+)
