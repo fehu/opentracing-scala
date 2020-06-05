@@ -77,6 +77,12 @@ lazy val testDependencies = Seq(
 // Has its own configuration file (and own version)
 lazy val compilerPlugin = project in file("compiler-plugin")
 
+// Tests
+
+Global / concurrentRestrictions := Seq(
+  Tags.limit(Tags.CPU, 1),
+  Tags.limit(Tags.Test, 1)
+)
 
 // Publishing
 
@@ -94,9 +100,4 @@ ThisBuild / credentials += Credentials(
   "oss.sonatype.org",
   sys.env.getOrElse("SONATYPE_USER", ""),
   sys.env.getOrElse("SONATYPE_PWD", "")
-)
-
-Global / concurrentRestrictions := Seq(
-  Tags.limit(Tags.CPU, 1),
-  Tags.limit(Tags.Test, 1)
 )
