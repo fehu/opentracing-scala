@@ -7,6 +7,15 @@ ThisBuild / scalaVersion     := scala213
 ThisBuild / version          := "0.1.9"
 ThisBuild / organization     := "com.github.fehu"
 
+
+ThisBuild / homepage   := Some(url("https://github.com/Grupo-Abraxas/opentracing-scala"))
+ThisBuild / scmInfo    := Some(ScmInfo(homepage.value.get, "git@github.com:Grupo-Abraxas/opentracing-scala.git"))
+ThisBuild / developers := List(
+                            Developer("fehu", "Dmitry K", "kdn.kovalev@gmail.com", url("https://github.com/fehu"))
+                          )
+ThisBuild / licenses += ("MIT", url("https://opensource.org/licenses/MIT"))
+
+
 inThisBuild(Seq(
   addCompilerPlugin(Dependencies.`kind-projector`),
   addCompilerPlugin(Dependencies.`monadic-for`)
@@ -71,13 +80,11 @@ lazy val compilerPlugin = project in file("compiler-plugin")
 
 // Publishing
 
-ThisBuild / publishTo := Some("Artifactory Realm" at "https://artifactory.arkondata.com/artifactory/sbt-dev")
-ThisBuild / credentials += Credentials(
-  "Artifactory Realm",
-  "artifactory.arkondata.com",
-  sys.env.getOrElse("ARTIFACTORY_USER", ""),
-  sys.env.getOrElse("ARTIFACTORY_PASSWORD", "")
-)
+ThisBuild / publishMavenStyle := true
 
-// Fix `java.net.ProtocolException: Unexpected status line: 0` when publishing to artifactory
-ThisBuild / updateOptions := updateOptions.value.withGigahorse(false)
+ThisBuild / publishTo := Some(
+  if (isSnapshot.value)
+    Opts.resolver.sonatypeSnapshots
+  else
+    Opts.resolver.sonatypeStaging
+)
