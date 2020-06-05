@@ -104,4 +104,4 @@ ThisBuild / credentials += Credentials(
 
 // Fix for error `java.net.ProtocolException: Too many follow-up requests: 21`
 // See [[https://github.com/sbt/sbt-pgp/issues/150]]
-updateOptions := updateOptions.value.withGigahorse(false)
+ThisBuild / updateOptions := updateOptions.value.withGigahorse(false)
