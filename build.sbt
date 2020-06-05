@@ -97,6 +97,8 @@ credentials += Credentials(
   sys.env.getOrElse("SONATYPE_PWD", "")
 )
 
+Global / useGpgPinentry := false
+
 // Fix for error `java.net.ProtocolException: Too many follow-up requests: 21`
 // See [[https://github.com/sbt/sbt-pgp/issues/150]]
 updateOptions := updateOptions.value.withGigahorse(false)
