@@ -28,7 +28,7 @@ jobs:
         chmod 700 -R ~/.gnupg/
     - name: Create local staging bundle (signed)
       env:
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        PGP_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         GPG_TTY: $(tty)
       run: sbt publishSigned
     - name: Bundle release to Sonatype
