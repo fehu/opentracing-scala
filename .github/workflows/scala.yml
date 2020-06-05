@@ -20,9 +20,10 @@ jobs:
     - name: Setup GPG for signing artifacts
       env:
         GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
-      run: mkdir -p ~/.gnupg/
-           printf "$GPG_SECRET_KEY" | base64 --decode > ~/.gnupg/private.key
-           gpg --import ~/.gnupg/private.key
+      run: |
+        mkdir -p ~/.gnupg/
+        printf "$GPG_SECRET_KEY" | base64 --decode > ~/.gnupg/private.key
+        gpg --import ~/.gnupg/private.key
     - name: Create local staging bundle (signed)
       env:
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
