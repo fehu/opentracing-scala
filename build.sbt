@@ -4,7 +4,7 @@ val scala213 = "2.13.2"
 
 ThisBuild / crossScalaVersions := List(scala213)
 ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.1.9"
+ThisBuild / version          := "0.2.0"
 ThisBuild / organization     := "com.arkondata"
 
 
