@@ -43,8 +43,7 @@ lazy val akka = (project in file("akka"))
   .settings(
     name := "opentracing-akka",
     libraryDependencies += Dependencies.`akka-actor`,
-    libraryDependencies ++= testDependencies,
-    parallelExecution in Test := false
+    libraryDependencies ++= testDependencies
   )
   .dependsOn(scala % "compile->compile;test->test")
 
