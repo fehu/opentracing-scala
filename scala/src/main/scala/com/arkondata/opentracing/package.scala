@@ -1,7 +1,6 @@
 package com.arkondata
 
-import scala.collection.JavaConverters._
-import scala.language.higherKinds
+import scala.jdk.CollectionConverters._
 
 import cats.{ Eval, Later }
 import io.opentracing.{ Span, Tracer }

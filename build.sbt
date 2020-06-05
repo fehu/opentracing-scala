@@ -17,6 +17,7 @@ ThisBuild / licenses += ("MIT", url("https://opensource.org/licenses/MIT"))
 
 
 inThisBuild(Seq(
+  scalacOptions in Compile ++= Seq("-feature", "-deprecation", "-unchecked"),
   addCompilerPlugin(Dependencies.`kind-projector`),
   addCompilerPlugin(Dependencies.`monadic-for`)
 ))

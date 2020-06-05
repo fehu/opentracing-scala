@@ -1,19 +1,16 @@
 package com.arkondata.opentracing
 
-import scala.language.{ higherKinds, implicitConversions }
+import scala.language.implicitConversions
 import scala.util.Try
 
 import cats.arrow.FunctionK
-import cats.data.EitherT
-import cats.{ Defer, Eval, Later, MonadError, ~> }
+import cats.{ Defer, MonadError, ~> }
 import cats.syntax.applicativeError._
-import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import io.opentracing.{ Scope, Span, SpanContext, Tracer }
 import com.arkondata.opentracing.util.cats.defer
-
+import io.opentracing.{ Scope, Span, SpanContext, Tracer }
 
 trait Tracing[F0[_], F1[_]] {
   parent =>

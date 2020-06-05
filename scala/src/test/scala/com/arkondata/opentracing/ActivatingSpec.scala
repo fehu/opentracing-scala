@@ -1,6 +1,6 @@
 package com.arkondata.opentracing
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
@@ -8,9 +8,10 @@ import cats.Eval
 import cats.data.EitherT
 import cats.effect.IO
 import com.arkondata.opentracing.concurrent.TracingExecutionContext
+import org.scalatest.EitherValues
 import org.scalatest.freespec.AnyFreeSpec
 
-class ActivatingSpec extends AnyFreeSpec with Spec {
+class ActivatingSpec extends AnyFreeSpec with Spec with EitherValues {
 
   def activeSpan() = mockTracer.activeSpan()
 
@@ -44,8 +45,8 @@ class ActivatingSpec extends AnyFreeSpec with Spec {
         val evalT = evalT0.activating(span) // ETE[Unit]
         val eval = evalT.value // Eval[Unit]
         activeSpan() shouldBe null
-        eval.value shouldBe 'left
-        eval.value.left.get shouldBe a[RuntimeException]
+        eval.value shouldBe Symbol("left")
+        eval.value.left.value shouldBe a[RuntimeException]
         activeSpan() shouldBe null
         span.finish()
         val Seq(finished) = finishedSpans()

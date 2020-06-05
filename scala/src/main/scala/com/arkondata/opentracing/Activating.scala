@@ -1,7 +1,5 @@
 package com.arkondata.opentracing
 
-import scala.language.higherKinds
-
 import cats.{ Defer, MonadError, ~> }
 import cats.syntax.applicativeError._
 import cats.syntax.flatMap._

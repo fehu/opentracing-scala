@@ -1,7 +1,5 @@
 package com.arkondata.opentracing
 
-import scala.language.higherKinds
-
 import cats.data.EitherT
 import cats.{ Eval, Id, Later, ~> }
 import com.arkondata.opentracing.util.CatsEvalEitherTMonadError

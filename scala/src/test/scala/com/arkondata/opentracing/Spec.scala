@@ -1,6 +1,6 @@
 package com.arkondata.opentracing
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import io.opentracing.mock.{ MockSpan, MockTracer }
 import io.opentracing.util.ThreadLocalScopeManager

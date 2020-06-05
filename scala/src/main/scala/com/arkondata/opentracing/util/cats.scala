@@ -1,7 +1,5 @@
 package com.arkondata.opentracing.util
 
-import scala.language.higherKinds
-
 import _root_.cats.{ Applicative, Defer, Eval, Id, MonadError }
 import _root_.cats.data.EitherT
 import _root_.cats.syntax.comonad._
