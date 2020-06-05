@@ -20,4 +20,7 @@ jobs:
     - name: Run tests
       run: sbt test
     - name: Publish
+      env:
+        SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+        SONATYPE_PWD: ${{ secrets.SONATYPE_PWD}}
       run: sbt publish
