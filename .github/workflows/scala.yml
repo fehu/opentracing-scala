@@ -19,6 +19,7 @@ jobs:
       run: sbt test
     - name: Publish
       env:
+        IS_RELEASE: true
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PWD: ${{ secrets.SONATYPE_PWD}}
       run: sbt publish
