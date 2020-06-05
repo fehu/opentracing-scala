@@ -110,7 +110,7 @@ class AskTracingSpec extends AnyFreeSpec with Spec with BeforeAndAfterAll {
 
     activeSpanOpt shouldBe None
     result shouldBe "why"
-    Thread.sleep(50)
+    Thread.sleep(10)
     val Seq(finishedActorJob, finishedActor, finishedOuter) = finishedSpans()
     finishedActorJob.operationName() shouldBe "wait"
     finishedActorJob.tags().asScala shouldBe Map("how long?" -> 42)
