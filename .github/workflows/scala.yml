@@ -1,9 +1,7 @@
-name: Scala CI
+name: Scala CI - Publish
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
     branches: [ master ]
 
 jobs:
@@ -17,6 +15,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: Run tests	
+      run: sbt test
     - name: Publish
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
