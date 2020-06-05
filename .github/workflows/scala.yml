@@ -24,7 +24,7 @@ jobs:
       run: |
         mkdir -p ~/.gnupg/
         printf "$GPG_SECRET_KEY" | base64 --decode > ~/.gnupg/private.key
-        gpg --import ~/.gnupg/private.key
+        gpg --batch --import ~/.gnupg/private.key
     - name: Create local staging bundle (signed)
       env:
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
