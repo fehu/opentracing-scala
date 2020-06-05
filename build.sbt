@@ -92,6 +92,8 @@ ThisBuild / publishMavenStyle := true
 ThisBuild / publishTo := Some(
   if (isSnapshot.value)
     Opts.resolver.sonatypeSnapshots
+  else if (sys.env.get("IS_RELEASE").map(_.toLowerCase.trim).contains("true"))
+    Opts.resolver.sonatypeReleases
   else
     Opts.resolver.sonatypeStaging
 )
