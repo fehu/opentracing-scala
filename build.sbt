@@ -87,18 +87,10 @@ Global / concurrentRestrictions := Seq(
 
 // Publishing
 
-ThisBuild / publishMavenStyle := true
+publishMavenStyle := true
+publishTo := sonatypePublishToBundle.value
 
-ThisBuild / publishTo := Some(
-  if (isSnapshot.value)
-    Opts.resolver.sonatypeSnapshots
-  else if (sys.env.get("IS_RELEASE").map(_.toLowerCase.trim).contains("true"))
-    Opts.resolver.sonatypeReleases
-  else
-    Opts.resolver.sonatypeStaging
-)
-
-ThisBuild / credentials += Credentials(
+credentials += Credentials(
   "Sonatype Nexus Repository Manager",
   "oss.sonatype.org",
   sys.env.getOrElse("SONATYPE_USER", ""),
@@ -107,4 +99,4 @@ ThisBuild / credentials += Credentials(
 
 // Fix for error `java.net.ProtocolException: Too many follow-up requests: 21`
 // See [[https://github.com/sbt/sbt-pgp/issues/150]]
-ThisBuild / updateOptions := updateOptions.value.withGigahorse(false)
+updateOptions := updateOptions.value.withGigahorse(false)
