@@ -91,6 +91,8 @@ ThisBuild / publishMavenStyle := true
 ThisBuild / publishTo := sonatypePublishToBundle.value
 ThisBuild / pomIncludeRepository := { _ => false }
 
+Global / PgpKeys.gpgCommand := (baseDirectory.value / "gpg.sh").getAbsolutePath
+
 ThisBuild / credentials += Credentials(
   "Sonatype Nexus Repository Manager",
   "oss.sonatype.org",
