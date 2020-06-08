@@ -1,8 +1,8 @@
 name: Scala CI - Publish
 
 on:
-  push:
-    branches: [ master ]
+  release: 
+    types: [released, prereleased]
 
 jobs:
   build:
@@ -15,24 +15,24 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    # - name: Run tests	
-    #  run: sbt test
-    - name: Show GPG version
-      run: gpg --version
+    
+    - name: Run tests	
+      run: sbt test
+      
     - name: Setup GPG for signing artifacts
       env:
         GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
-        GPG_TTY: $(tty)
       run: |
         mkdir -p ~/.gnupg/
         printf "$GPG_SECRET_KEY" | base64 --decode > ~/.gnupg/private.key
         gpg --batch --import ~/.gnupg/private.key
         chmod 700 -R ~/.gnupg/
+    
     - name: Create local staging bundle (signed)
       env:
         PGP_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        GPG_TTY: $(tty)
       run: sbt publishSigned
+
     - name: Bundle release to Sonatype
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
