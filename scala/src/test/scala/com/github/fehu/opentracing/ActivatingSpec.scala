@@ -7,7 +7,6 @@ import scala.concurrent.duration._
 import cats.Eval
 import cats.data.EitherT
 import cats.effect.IO
-import com.github.fehu.opentracing.concurrent.TracingExecutionContext
 import org.scalatest.freespec.AnyFreeSpec
 
 class ActivatingSpec extends AnyFreeSpec with Spec {
@@ -81,6 +80,7 @@ class ActivatingSpec extends AnyFreeSpec with Spec {
     }
   }
 
+/*
   "`TracingExecutionContext` should propagate span through" - {
     "Future" in {
       assume(activeSpan() eq null)
@@ -156,5 +156,6 @@ class ActivatingSpec extends AnyFreeSpec with Spec {
       finished2.parentId() shouldBe finished1.context().spanId()
     }
   }
+*/
 
 }
