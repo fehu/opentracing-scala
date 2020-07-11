@@ -1,10 +1,10 @@
-package com.github.fehu.opentracing.internal
+package com.github.fehu.opentracing.v2.internal
 
 import cats.Endo
 import cats.effect.Sync
-
-import com.github.fehu.opentracing.Traced
 import io.opentracing.{ Span, SpanContext, Tracer }
+
+import com.github.fehu.opentracing.v2.Traced
 
 private[opentracing] object Tools {
   def newSpan[F[_]](tracer: Tracer,

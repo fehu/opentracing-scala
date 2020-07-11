@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing
+package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 

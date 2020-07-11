@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing
+package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 
@@ -10,7 +10,8 @@ import cats.syntax.flatMap._
 import io.opentracing.{ Span, SpanContext, Tracer }
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.Traced.SpanInterface
+import com.github.fehu.opentracing.v2.{ Traced, TracedRun }
+import com.github.fehu.opentracing.v2.Traced.SpanInterface
 
 package object syntax {
 

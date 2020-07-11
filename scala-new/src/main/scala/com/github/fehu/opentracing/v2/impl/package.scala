@@ -1,11 +1,13 @@
-package com.github.fehu.opentracing
+package com.github.fehu.opentracing.v2
 
 import cats.data.StateT
 import cats.effect.{ IO, Sync }
-import com.github.fehu.opentracing.internal.{ TracedStateTracedInstance, TracedStateTracedLiftInstance, TracedStateTracedRunInstance }
+
+import com.github.fehu.opentracing.v2.{ Traced, TracedLift, TracedRun }
+import com.github.fehu.opentracing.v2.internal.{ TracedStateTracedInstance, TracedStateTracedLiftInstance, TracedStateTracedRunInstance }
 
 package object impl {
-  import com.github.fehu.opentracing.internal.State
+  import com.github.fehu.opentracing.v2.internal.State
 
   type TracedState[F[_], A] = StateT[F, State[F], A]
 

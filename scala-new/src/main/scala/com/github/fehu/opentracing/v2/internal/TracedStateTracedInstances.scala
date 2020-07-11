@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.internal
+package com.github.fehu.opentracing.v2.internal
 
 import cats.data.StateT
 import cats.effect.{ ExitCase, Sync }
@@ -9,8 +9,8 @@ import cats.syntax.traverse._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer }
 
-import com.github.fehu.opentracing.{ Traced, TracedLift, TracedRun }
-import com.github.fehu.opentracing.impl.TracedState
+import com.github.fehu.opentracing.v2.{ Traced, TracedLift, TracedRun }
+import com.github.fehu.opentracing.v2.impl.TracedState
 
 private[opentracing] class TracedStateTracedInstance[F[_]](implicit sync: Sync[F]) extends Traced[TracedState[F, *]] { self =>
   private def state = StateT.get[F, State[F]]
