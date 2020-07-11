@@ -4,10 +4,10 @@ import scala.language.existentials
 
 import cats.Applicative
 import io.opentracing.propagation.Format
-import io.opentracing.{ Span, SpanContext, Tracer }
+import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
 trait TracedRun[F[_[*], *], G[_]] {
-  def apply[A](traced: F[G, A], tracer: Tracer, hooks: Traced.Hooks[G]): G[A]
+  def apply[A](traced: F[G, A], tracer: Tracer, hooks: Traced.Hooks[G], parent: Option[Span]): G[A]
 }
 
 object TracedRun {
@@ -26,7 +26,7 @@ trait Traced[F[_]] extends Traced.Interface[F] {
   def pure[A](a: A): F[A]
   def defer[A](fa: => F[A]): F[A]
 
-  def currentSpan: F[Traced.SpanInterface[F]]
+  def currentSpan: Traced.SpanInterface[F]
 
   def injectContext(context: SpanContext): Traced.Interface[F]
   def injectContextFrom[C](carrier: C, format: Format[C]): Traced.Interface[F]
@@ -44,7 +44,8 @@ object Traced {
   class Tag(val apply: Taggable.PartiallyApplied) extends AnyVal
 
   object Tag {
-    implicit def pair[A](p: (String, A))(implicit t: Taggable[A]): Tag = new Tag(t(p._1, p._2))
+    implicit def stringPair[A](p: (String, A))(implicit t: Taggable[A]): Tag = new Tag(t(p._1, p._2))
+    implicit def tagPair[A](p: (tag.Tag[A], A))(implicit t: Taggable[A]): Tag = new Tag(t(p._1.getKey, p._2))
   }
 
   trait Taggable[A] { self =>
@@ -85,6 +86,7 @@ object Traced {
 
     def setTag(tag: Traced.Tag): F[Unit]
     def log(field: (String, Any), fields: (String, Any)*): F[Unit]
+    def log(event: String): F[Unit]
 
     def setBaggageItem(key: String, value: String): F[Unit]
     def getBaggageItem(key: String): F[Option[String]]

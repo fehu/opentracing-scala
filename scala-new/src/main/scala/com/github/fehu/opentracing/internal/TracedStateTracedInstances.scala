@@ -8,6 +8,7 @@ import cats.syntax.functor._
 import cats.syntax.traverse._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer }
+
 import com.github.fehu.opentracing.{ Traced, TracedLift, TracedRun }
 import com.github.fehu.opentracing.impl.TracedState
 
@@ -19,7 +20,7 @@ private[opentracing] class TracedStateTracedInstance[F[_]](implicit sync: Sync[F
 
   def defer[A](fa: => TracedState[F, A]): TracedState[F, A] = StateT.liftF(sync.delay(fa)).flatMap(locally)
 
-  def currentSpan: TracedState[F, Traced.SpanInterface[TracedState[F, *]]] = state.map(s => new CurrentSpan(s.currentSpan))
+  def currentSpan: Traced.SpanInterface[TracedState[F, *]] = new CurrentSpan[TracedState[F, *]](state.map(_.currentSpan))
 
   def apply[A](op: String, tags: Traced.Tag*)(fa: TracedState[F, A]): TracedState[F, A] =
     for {
@@ -72,8 +73,8 @@ private[opentracing] class TracedStateTracedInstance[F[_]](implicit sync: Sync[F
 }
 
 private[opentracing] class TracedStateTracedRunInstance[F[_]](implicit sync: Sync[F]) extends TracedRun[TracedState, F] {
-  def apply[A](traced: TracedState[F, A], tracer: Tracer, hooks: Traced.Hooks[F]): F[A] =
-    traced.run(State[F](tracer, hooks, None)).map(_._2)
+  def apply[A](traced: TracedState[F, A], tracer: Tracer, hooks: Traced.Hooks[F], parent: Option[Span]): F[A] =
+    traced.run(State[F](tracer, hooks, parent)).map(_._2)
 }
 
 private[opentracing] class TracedStateTracedLiftInstance[F[_]](implicit sync: Sync[F]) extends TracedLift[TracedState, F] {
