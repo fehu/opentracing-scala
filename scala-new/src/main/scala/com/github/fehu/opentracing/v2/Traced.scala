@@ -2,24 +2,13 @@ package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 
-import cats.Applicative
+import cats.{ Applicative, ~> }
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
-trait TracedRun[F[_[*], *], G[_]] {
-  def apply[A](traced: F[G, A], tracer: Tracer, hooks: Traced.Hooks[G], parent: Option[Span]): G[A]
-}
-
-object TracedRun {
-  def apply[F[_[*], *], G[_]](implicit tracedRun: TracedRun[F, G]): TracedRun[F, G] = tracedRun
-}
-
-trait TracedLift[F[_[*], *], G[_]] {
-  def apply[A](ga: G[A]): F[G, A]
-}
-
-object TracedLift {
-  def apply[F[_[*], *], G[_]](implicit tracedLift: TracedLift[F, G]): TracedLift[F, G] = tracedLift
+trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
+  def run[A](traced: F[U, A], tracer: Tracer, hooks: Traced.Hooks[U], parent: Option[Span]): U[A]
+  def lift[A](ua: U[A]): F[U, A]
 }
 
 trait Traced[F[_]] extends Traced.Interface[F] {
@@ -95,13 +84,13 @@ object Traced {
   final class Hooks[F[_]](
     val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
     val justAfterStart: SpanInterface[F] => F[Unit],
-    val beforeStop: Option[Throwable] => SpanInterface[F] => F[Unit]
+    val beforeStop: SpanInterface[F] => Option[Throwable] => F[Unit]
   )
   object Hooks {
     def apply[F[_]](
       beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder = null,
       justAfterStart: SpanInterface[F] => F[Unit] = null,
-      beforeStop: Option[Throwable] => SpanInterface[F] => F[Unit] = null
+      beforeStop: SpanInterface[F] => Option[Throwable] => F[Unit] = null
     )(implicit A: Applicative[F]): Hooks[F] =
       new Hooks(
         Option(beforeStart).getOrElse(locally),

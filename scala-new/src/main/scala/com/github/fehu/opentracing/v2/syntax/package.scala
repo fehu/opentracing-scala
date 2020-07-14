@@ -10,7 +10,6 @@ import cats.syntax.flatMap._
 import io.opentracing.{ Span, SpanContext, Tracer }
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.v2.{ Traced, TracedRun }
 import com.github.fehu.opentracing.v2.Traced.SpanInterface
 
 package object syntax {
@@ -55,15 +54,15 @@ package object syntax {
 
   final implicit class TracedIdOps(obj: Traced.type) extends TracedFunctions
 
-  final implicit class TracedRunOps[F[_[*], *], G[_], A](fa: F[G, A])(implicit tracedRun: TracedRun[F, G]) {
+  final implicit class Traced2Ops[F[_[*], *], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
     def runTraced(tracer: Tracer, hooks: Traced.Hooks[G], parent: Span): G[A] =
-      tracedRun(fa, tracer, hooks, Option(parent))
+      traced.run(fa, tracer, hooks, Option(parent))
     def runTraced(tracer: Tracer, hooks: Traced.Hooks[G]): G[A] =
-      tracedRun(fa, tracer, hooks, None)
+      traced.run(fa, tracer, hooks, None)
     def runTraced(tracer: Tracer, parent: Span)(implicit A: Applicative[G]): G[A] =
-      tracedRun(fa, tracer, Traced.Hooks[G](), Option(parent))
+      traced.run(fa, tracer, Traced.Hooks[G](), Option(parent))
     def runTraced(tracer: Tracer)(implicit A: Applicative[G]): G[A] =
-      tracedRun(fa, tracer, Traced.Hooks[G](), None)
+      traced.run(fa, tracer, Traced.Hooks[G](), None)
   }
 
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])
