@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing.v2.internal
 
-import cats.data.StateT
+import cats.data.{ IndexedStateT, StateT }
 import cats.effect.{ CancelToken, ConcurrentEffect, ExitCase, Fiber, IO, Resource, Sync, SyncIO }
 import cats.effect.syntax.bracket._
 import cats.instances.option._
@@ -135,6 +135,8 @@ object TracedTTracedInstance {
 }
 
 private[opentracing] class TracedTSyncInstance[F[_]](implicit sync: Sync[F]) extends Sync[TracedT[F, *]] {
+  private lazy val M = IndexedStateT.catsDataMonadErrorForIndexedStateT[F, State[F], Throwable]
+
   def suspend[A](thunk: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(sync.delay(thunk)).flatMap(locally)
 
   def bracketCase[A, B](acquire: TracedT[F, A])
@@ -158,19 +160,9 @@ private[opentracing] class TracedTSyncInstance[F[_]](implicit sync: Sync[F]) ext
 
   def flatMap[A, B](fa: TracedT[F, A])(f: A => TracedT[F, B]): TracedT[F, B] = fa.flatMap(f)
 
-  // TODO ===============================================================================================================================================
-  // TODO ===============================================================================================================================================
-  // TODO ===============================================================================================================================================
-  def tailRecM[A, B](a: A)(f: A => TracedT[F, Either[A, B]]): TracedT[F, B] = ???
-
-  def raiseError[A](e: Throwable): TracedT[F, A] = StateT.liftF(sync.raiseError(e))
-
-  def handleErrorWith[A](fa: TracedT[F, A])(f: Throwable => TracedT[F, A]): TracedT[F, A] =
-    for {
-      s0      <- StateT.get[F, State[F]]
-      (s1, a) <- StateT liftF sync.handleErrorWith(fa.run(s0))(f andThen (_.run(s0)))
-      _       <- StateT.set[F, State[F]](s1)
-    } yield a
+  def tailRecM[A, B](a: A)(f: A => TracedT[F, Either[A, B]]): TracedT[F, B] = M.tailRecM(a)(f)
+  def raiseError[A](e: Throwable): TracedT[F, A] = M.raiseError(e)
+  def handleErrorWith[A](fa: TracedT[F, A])(f: Throwable => TracedT[F, A]): TracedT[F, A] = M.handleErrorWith(fa)(f)
 }
 
 class TracedTConcurrentEffectInstance[F[_]](
