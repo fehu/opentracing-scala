@@ -3,11 +3,14 @@ package com.github.fehu.opentracing.v2
 import scala.language.existentials
 
 import cats.{ Applicative, ~> }
+import cats.effect.Resource
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
 trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
-  def run[A](traced: F[U, A], tracer: Tracer, hooks: Traced.Hooks[U], parent: Option[Span]): U[A]
+  def currentRunParams: F[U, Traced.RunParams[U]]
+  def run[A](traced: F[U, A], params: Traced.RunParams[U]): U[A]
+
   def lift[A](ua: U[A]): F[U, A]
 }
 
@@ -28,6 +31,7 @@ object Traced {
 
   trait Interface[F[_]] {
     def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
+    def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
   }
 
   class Tag(val apply: Taggable.PartiallyApplied) extends AnyVal
@@ -91,6 +95,32 @@ object Traced {
 
     def setBaggageItem(key: String, value: String): F[Unit]
     def getBaggageItem(key: String): F[Option[String]]
+  }
+
+  final case class RunParams[F[_]](tracer: Tracer, hooks: Hooks[F], activeSpan: ActiveSpan)
+
+  object RunParams {
+    def apply[F[_]](tracer: Tracer, hooks: Hooks[F]): Partial[F] = Partial(tracer, hooks)
+
+    final case class Partial[F[_]](tracer: Tracer, hooks: Hooks[F]) {
+      def apply(active: ActiveSpan)(implicit A: Applicative[F]): RunParams[F] = RunParams(tracer, hooks, active)
+    }
+    implicit def fromPartial[F[_]: Applicative](p: Partial[F])(implicit active: ActiveSpan): RunParams[F] = p(active)
+  }
+
+  final class ActiveSpan(val maybe: Option[Span]) extends AnyVal {
+    override def toString: String = s"ActiveSpan(${maybe.toString})"
+  }
+
+  object ActiveSpan {
+    def apply(span: Option[Span]): ActiveSpan = new ActiveSpan(span)
+    def apply(span: Span): ActiveSpan = apply(Option(span))
+
+    lazy val empty: ActiveSpan = new ActiveSpan(None)
+
+    object Implicits {
+      implicit val emptyActiveSpan: ActiveSpan = empty
+    }
   }
 
   final class Hooks[F[_]](

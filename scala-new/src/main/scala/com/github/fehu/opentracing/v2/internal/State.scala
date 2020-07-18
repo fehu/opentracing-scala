@@ -41,4 +41,5 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
 private[opentracing] object CurrentSpan {
   def apply[F[_]: Sync](span: F[Span]): CurrentSpan[F] = new CurrentSpan(span.map(Option(_)))
   def apply[F[_]: Sync](span: Span): CurrentSpan[F] = new CurrentSpan(Sync[F].pure(Option(span)))
+  def apply[F[_]: Sync](span: Option[Span]): CurrentSpan[F] = new CurrentSpan(Sync[F].pure(span))
 }
