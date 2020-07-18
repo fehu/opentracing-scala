@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     publishArtifact := false
   )
-  .aggregate(scalaNew)
+  .aggregate(scalaNew, fs2New)
   .aggregate(scala, akka, effect, akkaEffect, fs2)
 
 lazy val scalaNew = (project in file("scala-new"))
@@ -30,6 +30,13 @@ lazy val scalaNew = (project in file("scala-new"))
     ),
     libraryDependencies ++= testDependencies
   )
+
+lazy val fs2New = (project in file("fs2-new"))
+  .settings(
+    name := "opentracing-fs2-new",
+    libraryDependencies += Dependencies.`fs2-core`
+  )
+  .dependsOn(scalaNew)
 
 lazy val scala = (project in file("scala"))
   .settings(
