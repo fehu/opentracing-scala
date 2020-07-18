@@ -12,15 +12,11 @@ import io.opentracing.{ Span, SpanContext, Tracer }
 
 import com.github.fehu.opentracing.v2.Traced
 
-private[opentracing] case class State[F[_]](
+private[opentracing] case class State(
   private[opentracing] val tracer: Tracer,
-  private[opentracing] val hooks: Traced.Hooks[F],
+  private[opentracing] val hooks: Traced.Hooks,
   private[opentracing] val currentSpan: Option[Span]
-) {
-  def imapK[G[_]](f: F ~> G, g: G ~> F): State[G] = State(tracer, hooks.imapK(f, g), currentSpan)
-
-  def orElse[G[_]](that: State[G]): State[F] = if (currentSpan.isEmpty) copy(currentSpan = that.currentSpan) else this
-}
+)
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])(implicit sync: Sync[F])
   extends Traced.SpanInterface[F]
@@ -52,7 +48,10 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
     def setBaggageItem(key: String, value: String): G[Unit] = f(self.setBaggageItem(key, value))
     def getBaggageItem(key: String): G[Option[String]] = f(self.getBaggageItem(key))
     def mapK[H[_]](g: G ~> H): Traced.SpanInterface[H] = self.mapK(g compose f)
+    def noop: G[Unit] = f(sync.unit)
   }
+
+  def noop: F[Unit] = sync.unit
 }
 
 private[opentracing] object CurrentSpan {

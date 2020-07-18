@@ -27,8 +27,7 @@ package object syntax extends LowPrioritySyntax {
 
     def extractContext[F[_]]: TracedFunctions.Extract[F] = TracedFunctions.extractInstance.asInstanceOf[TracedFunctions.Extract[F]]
 
-    def imapK[T[_[*], *], F[_], G[_]: Functor](f: F ~> G, g: G ~> F)(implicit traced: Traced2[T, F]): T[F, *] ~> T[G, *] =
-      traced.imapK(f, g)
+    def mapK[T[_[*], *], F[_], G[_]: Functor](f: F ~> G)(implicit traced: Traced2[T, F]): T[F, *] ~> T[G, *] = traced.mapK(f)
 
     def trace[F[_]](operation: String, tags: Traced.Tag*): TracedFunctions.Trace[F] = new TracedFunctions.Trace(operation, tags)
 
@@ -56,16 +55,16 @@ package object syntax extends LowPrioritySyntax {
   final implicit class TracedIdOps(obj: Traced.type) extends TracedFunctions
 
   final implicit class Traced2Ops[F[_[*], *], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
-    def runTraced(params: Traced.RunParams[G]): G[A] = traced.run(fa, params)
+    def runTraced(params: Traced.RunParams): G[A] = traced.run(fa, params)
 
-    def runTraced(tracer: Tracer, hooks: Traced.Hooks[G], parent: Traced.ActiveSpan): G[A] =
+    def runTraced(tracer: Tracer, hooks: Traced.Hooks, parent: Traced.ActiveSpan): G[A] =
       runTraced(Traced.RunParams(tracer, hooks, parent))
-    def runTraced(tracer: Tracer, hooks: Traced.Hooks[G]): G[A] =
+    def runTraced(tracer: Tracer, hooks: Traced.Hooks): G[A] =
       runTraced(Traced.RunParams(tracer, hooks, Traced.ActiveSpan.empty))
-    def runTraced(tracer: Tracer, parent: Traced.ActiveSpan)(implicit A: Applicative[G]): G[A] =
-      runTraced(Traced.RunParams(tracer, Traced.Hooks[G](), parent))
-    def runTraced(tracer: Tracer)(implicit A: Applicative[G]): G[A] =
-      runTraced(Traced.RunParams(tracer, Traced.Hooks[G](), Traced.ActiveSpan.empty))
+    def runTraced(tracer: Tracer, parent: Traced.ActiveSpan): G[A] =
+      runTraced(Traced.RunParams(tracer, Traced.Hooks(), parent))
+    def runTraced(tracer: Tracer): G[A] =
+      runTraced(Traced.RunParams(tracer, Traced.Hooks(), Traced.ActiveSpan.empty))
   }
 
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])

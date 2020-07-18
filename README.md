@@ -25,18 +25,18 @@ But its interface is separated into two typeclasses.
 
 `Traced2[T[_[*], *], F[_]]` refines operations, that require knowing underlying functor:
 ```scala
-  def currentRunParams: F[U, Traced.RunParams[U]]
-  def run[A](traced: F[U, A], params: Traced.RunParams[U]): U[A]
+  def currentRunParams: F[U, Traced.RunParams]
+  def run[A](traced: F[U, A], params: Traced.RunParams): U[A]
   
   def lift[A](ua: U[A]): F[U, A]
-  def imapK[G[_]: Functor](f: U ~> G, g: G ~> U): F[U, *] ~> F[G, *]
+  def mapK[G[_]](f: U ~> G): F[U, *] ~> F[G, *]
 ``` 
 
 ### Traced Transformer
 
 Implementation using cats' state transformer.
 ```scala
-  type TracedT[F[_], A] = StateT[F, State[F], A]
+  type TracedT[F[_], A] = StateT[F, State, A]
 ```
 
 Provides (experimental) instances of `Sync` and `ConcurrentEffect`.
