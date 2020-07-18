@@ -46,6 +46,12 @@ object Traced {
         def apply(builder: Tracer.SpanBuilder): Tracer.SpanBuilder = self(builder, key, value)
         def apply(builder: Span): Span = self(builder, key, value)
       }
+
+    def contramap[B](f: B => A): Taggable[B] =
+      new Taggable[B] {
+        def apply(builder: Tracer.SpanBuilder, key: String, value: B): Tracer.SpanBuilder = self(builder, key, f(value))
+        def apply(builder: Span, key: String, value: B): Span = self(builder, key, f(value))
+      }
   }
 
   object Taggable {
@@ -68,6 +74,10 @@ object Traced {
       def apply(builder: Tracer.SpanBuilder, key: String, value: Number): Tracer.SpanBuilder = builder.withTag(key, value)
       def apply(builder: Span, key: String, value: Number): Span = builder.setTag(key, value)
     }
+    implicit lazy val intIsTaggable: Taggable[Int]       = numberIsTaggable.contramap(Int.box)
+    implicit lazy val longIsTaggable: Taggable[Long]     = numberIsTaggable.contramap(Long.box)
+    implicit lazy val doubleIsTaggable: Taggable[Double] = numberIsTaggable.contramap(Double.box)
+    implicit lazy val floatIsTaggable: Taggable[Float]   = numberIsTaggable.contramap(Float.box)
   }
 
   trait SpanInterface[F[_]] {
