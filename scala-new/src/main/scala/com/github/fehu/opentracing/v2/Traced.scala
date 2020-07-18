@@ -84,7 +84,9 @@ object Traced {
     def context: F[Option[SpanContext]]
 
     def setTag(tag: Traced.Tag): F[Unit]
-    def log(field: (String, Any), fields: (String, Any)*): F[Unit]
+    def setTags(tags: Traced.Tag*): F[Unit]
+
+    def log(fields: (String, Any)*): F[Unit]
     def log(event: String): F[Unit]
 
     def setBaggageItem(key: String, value: String): F[Unit]

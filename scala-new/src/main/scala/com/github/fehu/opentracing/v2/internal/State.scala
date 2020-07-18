@@ -25,8 +25,11 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
   def context: F[Option[SpanContext]] = delay(_.context())
 
   def setTag(tag: Traced.Tag): F[Unit] = delay(tag.apply(_)).void
+  def setTags(tags: Traced.Tag*): F[Unit] =
+    if (tags.nonEmpty) delay(tags.foldLeft(_)((s, t) => t.apply(s))).void
+    else sync.unit
 
-  def log(field: (String, Any), fields: (String, Any)*): F[Unit] = delay(_.log((field +: fields).toMap.asJava)).void
+  def log(fields: (String, Any)*): F[Unit] = if (fields.nonEmpty) delay(_.log(fields.toMap.asJava)).void else sync.unit
 
   def log(event: String): F[Unit] = delay(_.log(event)).void
 
