@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing.v2.internal
 
+import cats.{ Functor, ~> }
 import cats.data.{ IndexedStateT, StateT }
 import cats.effect.{ CancelToken, ConcurrentEffect, ExitCase, Fiber, IO, Resource, Sync, SyncIO }
 import cats.effect.syntax.bracket._
@@ -8,7 +9,6 @@ import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.functor._
 import cats.syntax.traverse._
-import cats.~>
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext }
 
@@ -78,6 +78,11 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
   def run[A](traced: TracedT[F, A], params: Traced.RunParams[F]): F[A] =
     traced.run(State[F](params.tracer, params.hooks, params.activeSpan.maybe)).map(_._2)
 
+  def imapK[G[_]: Functor](f: F ~> G, g: G ~> F): TracedT[F, *] ~> TracedT[G, *] =
+    λ[TracedT[F, *] ~> TracedT[G, *]](_
+      .mapK(f)
+      .transformS[State[G]](_.imapK(g, f), _ orElse _)
+    )
 }
 
 object TracedTTracedInstance {

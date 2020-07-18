@@ -2,6 +2,7 @@ package com.github.fehu.opentracing.v2.internal
 
 import scala.jdk.CollectionConverters._
 
+import cats.~>
 import cats.effect.Sync
 import cats.instances.option._
 import cats.syntax.flatMap._
@@ -15,11 +16,16 @@ private[opentracing] case class State[F[_]](
   private[opentracing] val tracer: Tracer,
   private[opentracing] val hooks: Traced.Hooks[F],
   private[opentracing] val currentSpan: Option[Span]
-)
+) {
+  def imapK[G[_]](f: F ~> G, g: G ~> F): State[G] = State(tracer, hooks.imapK(f, g), currentSpan)
+
+  def orElse[G[_]](that: State[G]): State[F] = if (currentSpan.isEmpty) copy(currentSpan = that.currentSpan) else this
+}
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])(implicit sync: Sync[F])
   extends Traced.SpanInterface[F]
-{
+{ self =>
+
   private def delay[R](f: Span => R): F[Option[R]] = fOpt.flatMap(_.traverse(span => sync.delay(f(span))))
 
   def context: F[Option[SpanContext]] = delay(_.context())
@@ -36,6 +42,17 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
   def setBaggageItem(key: String, value: String): F[Unit] = delay(_.setBaggageItem(key, value)).void
 
   def getBaggageItem(key: String): F[Option[String]] = delay(_.getBaggageItem(key))
+
+  def mapK[G[_]](f: F ~> G): Traced.SpanInterface[G] = new Traced.SpanInterface[G] {
+    def context: G[Option[SpanContext]] = f(self.context)
+    def setTag(tag: Traced.Tag): G[Unit] = f(self.setTag(tag))
+    def setTags(tags: Traced.Tag*): G[Unit] = f(self.setTags(tags: _*))
+    def log(fields: (String, Any)*): G[Unit] = f(self.log(fields: _*))
+    def log(event: String): G[Unit] = f(self.log(event))
+    def setBaggageItem(key: String, value: String): G[Unit] = f(self.setBaggageItem(key, value))
+    def getBaggageItem(key: String): G[Option[String]] = f(self.getBaggageItem(key))
+    def mapK[H[_]](g: G ~> H): Traced.SpanInterface[H] = self.mapK(g compose f)
+  }
 }
 
 private[opentracing] object CurrentSpan {

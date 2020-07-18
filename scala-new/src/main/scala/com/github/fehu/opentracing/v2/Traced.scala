@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 
-import cats.{ Applicative, ~> }
+import cats.{ Applicative, Functor, ~> }
 import cats.effect.Resource
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
@@ -12,6 +12,7 @@ trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
   def run[A](traced: F[U, A], params: Traced.RunParams[U]): U[A]
 
   def lift[A](ua: U[A]): F[U, A]
+  def imapK[G[_]: Functor](f: U ~> G, g: G ~> U): F[U, *] ~> F[G, *]
 }
 
 trait Traced[F[_]] extends Traced.Interface[F] {
@@ -95,6 +96,8 @@ object Traced {
 
     def setBaggageItem(key: String, value: String): F[Unit]
     def getBaggageItem(key: String): F[Option[String]]
+
+    def mapK[G[_]](f: F ~> G): SpanInterface[G]
   }
 
   final case class RunParams[F[_]](tracer: Tracer, hooks: Hooks[F], activeSpan: ActiveSpan)
@@ -127,7 +130,14 @@ object Traced {
     val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
     val justAfterStart: SpanInterface[F] => F[Unit],
     val beforeStop: SpanInterface[F] => Option[Throwable] => F[Unit]
-  )
+  ) {
+    def imapK[G[_]](f: F ~> G, g: G ~> F): Hooks[G] =
+      new Hooks[G](
+        beforeStart,
+        justAfterStart compose ((_: SpanInterface[G]).mapK(g)) andThen f.apply,
+        beforeStop compose ((_: SpanInterface[G]).mapK(g)) andThen (_ andThen f.apply)
+      )
+  }
   object Hooks {
     def apply[F[_]](
       beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder = null,

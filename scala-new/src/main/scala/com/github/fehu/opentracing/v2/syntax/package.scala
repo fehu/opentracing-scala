@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 
-import cats.{ Applicative, Defer, Monad, ~> }
+import cats.{ Applicative, Defer, Functor, Monad, ~> }
 import cats.effect.Resource
 import cats.syntax.flatMap._
 import io.opentracing.{ SpanContext, Tracer }
@@ -26,6 +26,9 @@ package object syntax extends LowPrioritySyntax {
     def currentSpan[F[_]](implicit traced: Traced[F]): Traced.SpanInterface[F] = traced.currentSpan
 
     def extractContext[F[_]]: TracedFunctions.Extract[F] = TracedFunctions.extractInstance.asInstanceOf[TracedFunctions.Extract[F]]
+
+    def imapK[T[_[*], *], F[_], G[_]: Functor](f: F ~> G, g: G ~> F)(implicit traced: Traced2[T, F]): T[F, *] ~> T[G, *] =
+      traced.imapK(f, g)
 
     def trace[F[_]](operation: String, tags: Traced.Tag*): TracedFunctions.Trace[F] = new TracedFunctions.Trace(operation, tags)
 
