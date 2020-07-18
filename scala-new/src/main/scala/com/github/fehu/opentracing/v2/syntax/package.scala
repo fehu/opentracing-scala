@@ -17,10 +17,10 @@ package object syntax {
   final implicit class TracedOps[F[_], A](fa: F[A])(implicit traced: Traced[F]) {
     def trace(operation: String, tags: Traced.Tag*): F[A] = traced(operation, tags: _*)(fa)
 
-    def injecting(context: SpanContext)(operation: String, tags: Traced.Tag*): F[A] =
+    def inject(context: SpanContext)(operation: String, tags: Traced.Tag*): F[A] =
       traced.injectContext(context)(operation, tags: _*)(fa)
 
-    def injectingFrom[C](carrier: C, format: Format[C])(operation: String, tags: Traced.Tag*): F[A] =
+    def injectFrom[C](carrier: C, format: Format[C])(operation: String, tags: Traced.Tag*): F[A] =
       traced.injectContextFrom(carrier, format)(operation, tags: _*)(fa)
   }
 
@@ -39,7 +39,7 @@ package object syntax {
 
   object TracedFunctions extends TracedFunctions {
     protected[syntax] class Extract[F[_]] {
-      def apply[C](carrier: C, format: Format[C])(implicit traced: Traced[F]): F[Option[C]] =
+      def apply[C0 <: C, C](carrier: C0, format: Format[C])(implicit traced: Traced[F]): F[Option[C0]] =
         traced.extractContext(carrier, format)
     }
     protected[syntax] class Trace[F[_]](operation: String, tags: Seq[Traced.Tag]) {

@@ -81,7 +81,7 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F]) e
       } yield a
   }
 
-  def extractContext[C](carrier: C, format: Format[C]): TracedT[F, Option[C]] =
+  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
     for {
       s <- state
       o <- StateT liftF s.currentSpan.traverse(span => sync.delay(s.tracer.inject(span.context(), format, carrier)))
