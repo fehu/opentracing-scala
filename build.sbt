@@ -4,7 +4,7 @@ val scala213 = "2.13.2"
 
 ThisBuild / crossScalaVersions := List(scala213)
 ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.3.0-SNAPSHOT"
+ThisBuild / version          := "0.3.0-M1"
 ThisBuild / organization     := "com.github.fehu"
 
 inThisBuild(Seq(
@@ -15,11 +15,11 @@ inThisBuild(Seq(
 lazy val root = (project in file("."))
   .settings(
     name := "opentracing",
-    publishArtifact := false
+    skip in publish := true
   )
-  .aggregate(scalaNew, akkaNew, fs2New)
+  .aggregate(scala, akka, fs2)
 
-lazy val scalaNew = (project in file("scala-new"))
+lazy val scala = (project in file("scala"))
   .settings(
     name := "opentracing-scala-new",
     libraryDependencies ++= Seq(
@@ -30,20 +30,20 @@ lazy val scalaNew = (project in file("scala-new"))
     libraryDependencies ++= testDependencies
   )
 
-lazy val akkaNew = (project in file("akka-new"))
+lazy val akka = (project in file("akka"))
   .settings(
     name := "opentracing-akka-new",
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies
   )
-  .dependsOn(scalaNew % "compile->compile;test->test")
+  .dependsOn(scala % "compile->compile;test->test")
 
-lazy val fs2New = (project in file("fs2-new"))
+lazy val fs2 = (project in file("fs2"))
   .settings(
     name := "opentracing-fs2-new",
     libraryDependencies += Dependencies.`fs2-core`
   )
-  .dependsOn(scalaNew)
+  .dependsOn(scala)
 
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,
