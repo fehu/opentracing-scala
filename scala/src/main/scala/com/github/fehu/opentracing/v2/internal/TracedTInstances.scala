@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing.v2.internal
 
-import cats.~>
+import cats.{ Applicative, CommutativeApplicative, Monad, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
 import cats.effect.{ CancelToken, ConcurrentEffect, ExitCase, Fiber, IO, Resource, Sync, SyncIO }
 import cats.effect.syntax.bracket._
@@ -20,6 +20,9 @@ import com.github.fehu.opentracing.v2.transformer.TracedT
 
 private[opentracing] trait TracedTTracedInstances extends TracedTTracedLowPriorityInstances {
   implicit def tracedStateTracedInstance[F[_]: Sync]: Traced2[TracedT, F] = new TracedTTracedInstance
+
+  implicit def tracedTParallelInstance[F[_]](implicit par: Parallel[F]): Parallel.Aux[TracedT[F, *], TracedTParallelInstance.Par[par.F, *]] =
+    new TracedTParallelInstance[F, par.F]()(par)
 
   implicit def tracedTConcurrentEffectInstance[F[_]: ConcurrentEffect](implicit params: Traced.RunParams): ConcurrentEffect[TracedT[F, *]] =
     new TracedTConcurrentEffectInstance[F]
@@ -214,4 +217,42 @@ class TracedTConcurrentEffectInstance[F[_]](
     } yield ef.leftMap{ case (a, f) => a -> f.mapK(StateT.liftK[F, State]) }
                  .map { case (f, b) => f.mapK(StateT.liftK[F, State]) -> b }
 
+}
+
+class TracedTParallelInstance[G[_], ParF[_]](implicit val par0: Parallel.Aux[G, ParF]) extends Parallel[TracedT[G, *]] {
+  import TracedTParallelInstance.Par
+
+  type F[A] = Par[ParF, A]
+
+  def applicative: Applicative[Par[ParF, *]] = Par.parCommutativeApplicative0(par0.applicative)
+  def monad: Monad[TracedT[G, *]] = IndexedStateT.catsDataMonadForIndexedStateT[G, State](par0.monad)
+
+  def sequential: Par[ParF, *] ~> TracedT[G, *] =
+    λ[Par[ParF, *] ~> TracedT[G, *]](_.traced.mapK(par0.sequential)(par0.applicative))
+  def parallel: TracedT[G, *] ~> Par[ParF, *] =
+    λ[TracedT[G, *] ~> Par[ParF, *]](t => new Par(t.mapK(par0.parallel)(par0.monad)))
+}
+
+object TracedTParallelInstance {
+  class Par[F[_], A](val traced: TracedT[F, A]) extends AnyVal
+
+  object Par {
+    implicit def parCommutativeApplicative[F[_]: CommutativeApplicative]: CommutativeApplicative[Par[F, *]] =
+      parCommutativeApplicative0[F]
+
+    protected[TracedTParallelInstance] def parCommutativeApplicative0[F[_]](implicit A: Applicative[F]): CommutativeApplicative[Par[F, *]] =
+      new CommutativeApplicative[Par[F, *]] {
+        def pure[A](x: A): Par[F, A] = new Par(StateT.pure(x))
+
+        def ap[A, B](ff: Par[F, A => B])(fa: Par[F, A]): Par[F, B] =
+          new Par(StateT.applyF {
+            A.product(ff.traced.runF, fa.traced.runF)
+             .map { case (rff, rfa) =>
+              (s: State) =>
+                A.ap(rff(s).map(_._2))(rfa(s).map(_._2))
+                 .map((s, _))
+            }
+          })
+      }
+  }
 }
