@@ -18,8 +18,14 @@ package object syntax extends LowPrioritySyntax {
     def inject(context: SpanContext)(operation: String, tags: Traced.Tag*): F[A] =
       traced.injectContext(context)(operation, tags: _*)(fa)
 
+    def inject(context: Option[SpanContext])(operation: String, tags: Traced.Tag*): F[A] =
+      context.map(inject(_)(operation, tags: _*)).getOrElse(fa)
+
     def injectFrom[C](format: Format[C])(carrier: C)(operation: String, tags: Traced.Tag*): F[A] =
       traced.injectContextFrom(format)(carrier)(operation, tags: _*)(fa)
+
+    def injectFromOpt[C](format: Format[C])(carrier: Option[C])(operation: String, tags: Traced.Tag*): F[A] =
+      carrier.map(injectFrom(format)(_)(operation, tags: _*)).getOrElse(fa)
   }
 
   sealed trait TracedFunctions {
