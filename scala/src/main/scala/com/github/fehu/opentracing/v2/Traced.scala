@@ -24,7 +24,7 @@ trait Traced[F[_]] extends Traced.Interface[F] {
   def currentSpan: Traced.SpanInterface[F]
 
   def injectContext(context: SpanContext): Traced.Interface[F]
-  def injectContextFrom[C](carrier: C, format: Format[C]): Traced.Interface[F]
+  def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[F]
 
   def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): F[Option[C0]]
 }

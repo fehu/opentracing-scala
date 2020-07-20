@@ -55,7 +55,7 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
 
   def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = new InjectInterface(StateT.pure(context))
 
-  def injectContextFrom[C](carrier: C, format: Format[C]): Traced.Interface[TracedT[F, *]] =
+  def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[TracedT[F, *]] =
     new InjectInterface(
       for {
         s <- state
