@@ -9,7 +9,7 @@ import io.opentracing.propagation.Format
 package object fs2 {
 
   final implicit class TracedFs2StreamOps[F[_]: Functor, A](stream: Stream[F, A])(implicit t: Traced[F]) {
-    def traced(operation: String, tags: Traced.Tag*): Stream[F, A] =
+    def trace(operation: String, tags: Traced.Tag*): Stream[F, A] =
       Stream.resource(t.spanResource(operation, tags: _*)) *> stream
 
     def inject(context: SpanContext)(operation: String, tags: Traced.Tag*): Stream[F, A] =
