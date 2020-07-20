@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.v2
 
 import scala.language.existentials
 
-import cats.{ Applicative, Defer, Functor, Monad, ~> }
+import cats.{ Applicative, Defer, FlatMap, Functor, Monad, ~> }
 import cats.effect.Resource
 import cats.syntax.flatMap._
 import io.opentracing.{ SpanContext, Tracer }
@@ -40,7 +40,18 @@ package object syntax extends LowPrioritySyntax {
     def traceK[F[_]](operation: String, tags: Traced.Tag*)(implicit traced: Traced[F]): F ~> F =
       λ[F ~> F](f => traced(operation, tags: _*)(f))
 
+    def pure[T[_[*], *], F[_]]: TracedFunctions.Pure[F] = TracedFunctions.pureInstance.asInstanceOf[TracedFunctions.Pure[F]]
+
+    def defer[F[_]]: TracedFunctions.Defer[F] = TracedFunctions.deferInstance.asInstanceOf[TracedFunctions.Defer[F]]
+
     def delay[F[_]]: TracedFunctions.Delay[F] = TracedFunctions.delayInstance.asInstanceOf[TracedFunctions.Delay[F]]
+
+    def liftK[T[_[*], *], F[_]: Applicative](implicit traced: Traced2[T, F]): F ~> T[F, *] =
+      λ[F ~> T[F, *]](f => traced.lift(f))
+
+    def runK[T[_[*], *], F[_]: FlatMap](params: Traced.RunParams)(implicit traced: Traced2[T, F]): T[F, *] ~> F =
+      λ[T[F, *] ~> F](t => traced.run(t, params))
+
   }
 
   object TracedFunctions extends TracedFunctions {
@@ -51,10 +62,18 @@ package object syntax extends LowPrioritySyntax {
     protected[syntax] class Trace[F[_]](operation: String, tags: Seq[Traced.Tag]) {
       def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced(operation, tags: _*)(traced.defer(traced.pure(a)))
     }
+    protected[syntax] class Pure[F[_]] {
+      def apply[A](a: A)(implicit traced: Traced[F]): F[A] = traced.pure(a)
+    }
+    protected[syntax] class Defer[F[_]] {
+      def apply[A](fa: => F[A])(implicit traced: Traced[F]): F[A] = traced.defer(fa)
+    }
     protected[syntax] class Delay[F[_]] {
       def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced.defer(traced.pure(a))
     }
     protected lazy val extractInstance = new TracedFunctions.Extract[cats.Id]
+    protected lazy val pureInstance = new TracedFunctions.Pure[cats.Id]
+    protected lazy val deferInstance = new TracedFunctions.Defer[cats.Id]
     protected lazy val delayInstance = new TracedFunctions.Delay[cats.Id]
   }
 
