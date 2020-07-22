@@ -23,6 +23,10 @@ trait Traced[F[_]] extends Traced.Interface[F] {
 
   def currentSpan: Traced.SpanInterface[F]
 
+  def forceCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
+  /** Sets `active` span if no other is set. */
+  def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
+
   def injectContext(context: SpanContext): Traced.Interface[F]
   def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[F]
 

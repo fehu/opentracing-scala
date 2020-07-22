@@ -54,6 +54,17 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
 
   def currentSpan: Traced.SpanInterface[TracedT[F, *]] = new CurrentSpan[TracedT[F, *]](state.map(_.currentSpan))
 
+  def forceCurrentSpan(active: ActiveSpan): TracedT[F, Traced.SpanInterface[TracedT[F, *]]] =
+    StateT.modify[F, State](_.copy(currentSpan = active.maybe))
+          .as(currentSpan)
+
+  def recoverCurrentSpan(active: ActiveSpan): TracedT[F, Traced.SpanInterface[TracedT[F, *]]] =
+    StateT.get[F, State].flatMap(
+      _.currentSpan
+       .map(_ => pure(currentSpan))
+       .getOrElse(forceCurrentSpan(active))
+    )
+
   protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = state.map(_.currentSpan.map(Left(_)))
 
   def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = new InjectInterface(StateT.pure(context))
