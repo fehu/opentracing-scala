@@ -21,7 +21,7 @@ lazy val root = (project in file("."))
 
 lazy val scala = (project in file("scala"))
   .settings(
-    name := "opentracing-scala-new",
+    name := "opentracing-scala",
     libraryDependencies ++= Seq(
       Dependencies.`opentracing-api`,
       Dependencies.`cats-core`,
@@ -32,7 +32,7 @@ lazy val scala = (project in file("scala"))
 
 lazy val akka = (project in file("akka"))
   .settings(
-    name := "opentracing-akka-new",
+    name := "opentracing-akka",
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies
   )
@@ -40,7 +40,7 @@ lazy val akka = (project in file("akka"))
 
 lazy val fs2 = (project in file("fs2"))
   .settings(
-    name := "opentracing-fs2-new",
+    name := "opentracing-fs2",
     libraryDependencies += Dependencies.`fs2-core`
   )
   .dependsOn(scala)
