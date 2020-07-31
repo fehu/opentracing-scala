@@ -1,5 +1,9 @@
 *.class
 *.log
+target/
 
 # Intellij Idea
 .idea/
+
+# Misc
+*.patch
