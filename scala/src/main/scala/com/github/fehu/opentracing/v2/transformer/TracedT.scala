@@ -27,6 +27,8 @@ object TracedTIO {
   def liftF[F[_]: Effect, A](fa: F[A]): TracedTIO[A] = StateT.liftF(fa.toIO)
   def liftIO[A](io: IO[A]): TracedTIO[A] = StateT.liftF(io)
 
+  def raiseError[A](err: Throwable): TracedTIO[A] = liftF(IO.raiseError[A](err))
+
   def defer[A](tio: => TracedTIO[A]): TracedTIO[A] = tracedTIO.defer(tio)
   def deferIO[A](io: => IO[A]): TracedTIO[A] = defer(liftIO(io))
   def delay[A](a: => A): TracedTIO[A] = defer(pure(a))
