@@ -225,7 +225,7 @@ object TracedTTracedInstance {
 
 private[opentracing] trait TracedTMonadErrorProxy[F[_], E] extends MonadError[TracedT[F, *], E] {
   protected val MF: MonadError[F, E]
-  private val M0 = IndexedStateT.catsDataMonadErrorForIndexedStateT[F, State, E](MF)
+  private lazy val M0 = IndexedStateT.catsDataMonadErrorForIndexedStateT[F, State, E](MF)
 
   override def map[A, B](fa: TracedT[F, A])(f: A => B): TracedT[F, B] = M0.map(fa)(f)
   def pure[A](x: A): TracedT[F, A] = M0.pure(x)
@@ -296,7 +296,7 @@ private[opentracing] class TracedTAsyncInstance[F[_]](implicit A: Async[F])
 private[opentracing] trait TracedTEffect[F[_]] extends Effect[TracedT[F, *]] {
   protected val EF: Effect[F]
 
-  implicit private val EF0: Effect[F] = EF
+  implicit private def ef0: Effect[F] = EF
 
   protected val params: Traced.RunParams
 
