@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2.internal
+package com.github.fehu.opentracing.internal
 
 import scala.jdk.CollectionConverters._
 
@@ -10,7 +10,7 @@ import cats.syntax.functor._
 import cats.syntax.traverse._
 import io.opentracing.{ Span, SpanContext, Tracer }
 
-import com.github.fehu.opentracing.v2.Traced
+import com.github.fehu.opentracing.Traced
 
 private[opentracing] case class State(
   private[opentracing] val tracer: Tracer,

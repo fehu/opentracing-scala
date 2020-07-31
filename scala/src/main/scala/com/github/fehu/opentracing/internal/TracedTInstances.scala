@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2.internal
+package com.github.fehu.opentracing.internal
 
 import cats.{ Applicative, CommutativeApplicative, Defer, Monad, MonadError, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
@@ -17,9 +17,9 @@ import cats.syntax.traverse._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext }
 
-import com.github.fehu.opentracing.v2.{ Traced, Traced2 }
-import com.github.fehu.opentracing.v2.Traced.ActiveSpan
-import com.github.fehu.opentracing.v2.transformer.TracedT
+import com.github.fehu.opentracing.{ Traced, Traced2 }
+import com.github.fehu.opentracing.Traced.ActiveSpan
+import com.github.fehu.opentracing.transformer.TracedT
 
 /**
  * {{{

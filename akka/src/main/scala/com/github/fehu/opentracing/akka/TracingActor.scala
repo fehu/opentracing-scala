@@ -1,9 +1,9 @@
-package com.github.fehu.opentracing.v2.akka
+package com.github.fehu.opentracing.akka
 
 import akka.fehu.MessageInterceptingActor
 import io.opentracing.{ Span, SpanContext, Tracer }
 
-import com.github.fehu.opentracing.v2.Traced
+import com.github.fehu.opentracing.Traced
 
 final case class TracedMessage[A](message: A, spanContext: Option[SpanContext])
 

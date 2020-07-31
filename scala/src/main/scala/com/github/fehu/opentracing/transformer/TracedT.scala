@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2.transformer
+package com.github.fehu.opentracing.transformer
 
 import cats.data.StateT
 import cats.effect.{ Effect, IO, LiftIO }
@@ -7,8 +7,8 @@ import cats.{ Applicative, FlatMap, Functor, ~> }
 import cats.syntax.functor._
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.v2.Traced
-import com.github.fehu.opentracing.v2.internal.{ State, TracedTTracedInstance }
+import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.internal.{ State, TracedTTracedInstance }
 
 object TracedT {
   def liftK[F[_]: Applicative]: F ~> TracedT[F, *] = StateT.liftK

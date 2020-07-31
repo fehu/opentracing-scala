@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2.util
+package com.github.fehu.opentracing.util
 
 trait FunctionK2[F[*[_]], G[*[_]]] extends Serializable { self =>
   def apply[A[_]](fa: F[A]): G[A]

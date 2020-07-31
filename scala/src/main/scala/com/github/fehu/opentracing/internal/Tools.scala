@@ -1,9 +1,9 @@
-package com.github.fehu.opentracing.v2.internal
+package com.github.fehu.opentracing.internal
 
 import cats.{ Defer, Endo, MonadError }
 import io.opentracing.{ Span, SpanContext, Tracer }
 
-import com.github.fehu.opentracing.v2.Traced
+import com.github.fehu.opentracing.Traced
 
 private[opentracing] object Tools {
 

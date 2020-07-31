@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2
+package com.github.fehu.opentracing
 
 import _root_.akka.actor.ActorRef
 import _root_.akka.util.Timeout

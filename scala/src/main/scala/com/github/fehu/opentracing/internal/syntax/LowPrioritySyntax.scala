@@ -1,9 +1,9 @@
-package com.github.fehu.opentracing.v2.internal.syntax
+package com.github.fehu.opentracing.internal.syntax
 
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.v2.{ Traced, Traced2 }
+import com.github.fehu.opentracing.{ Traced, Traced2 }
 
 protected[opentracing] trait LowPrioritySyntax {
 

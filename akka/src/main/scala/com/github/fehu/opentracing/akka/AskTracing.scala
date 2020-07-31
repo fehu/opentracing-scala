@@ -1,5 +1,4 @@
-package com.github.fehu.opentracing.v2.akka
-
+package com.github.fehu.opentracing.akka
 
 import akka.actor.ActorRef
 import akka.pattern
@@ -8,8 +7,8 @@ import cats.effect.{ Async, ContextShift }
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 
-import com.github.fehu.opentracing.v2.Traced
-import com.github.fehu.opentracing.v2.syntax._
+import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.syntax._
 
 object AskTracing {
   class Ops[F[_]: Async: ContextShift: Traced](ref: ActorRef, message: Any, sender: ActorRef)

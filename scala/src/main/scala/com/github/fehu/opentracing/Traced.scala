@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2
+package com.github.fehu.opentracing
 
 import scala.language.existentials
 
@@ -7,7 +7,7 @@ import cats.effect.Resource
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
-import com.github.fehu.opentracing.v2.util.FunctionK2.~~>
+import com.github.fehu.opentracing.util.FunctionK2.~~>
 
 trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
   def currentRunParams: F[U, Traced.RunParams]

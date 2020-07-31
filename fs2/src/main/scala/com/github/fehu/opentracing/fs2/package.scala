@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2
+package com.github.fehu.opentracing
 
 import _root_.fs2.Stream
 import cats.~>
@@ -7,7 +7,7 @@ import cats.syntax.apply._
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.v2.Traced.ActiveSpan
+import com.github.fehu.opentracing.Traced.ActiveSpan
 
 package object fs2 {
 

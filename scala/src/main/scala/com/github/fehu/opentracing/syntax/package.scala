@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing.v2
+package com.github.fehu.opentracing
 
 import scala.language.existentials
 
@@ -8,7 +8,7 @@ import cats.syntax.flatMap._
 import io.opentracing.{ SpanContext, Tracer }
 import io.opentracing.propagation.Format
 
-import com.github.fehu.opentracing.v2.internal.syntax.LowPrioritySyntax
+import com.github.fehu.opentracing.internal.syntax.LowPrioritySyntax
 
 package object syntax extends LowPrioritySyntax {
 
