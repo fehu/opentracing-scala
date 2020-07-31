@@ -1,15 +1,18 @@
 package com.github.fehu.opentracing.v2.internal
 
-import cats.{ Applicative, CommutativeApplicative, Monad, Parallel, ~> }
+import cats.{ Applicative, CommutativeApplicative, Defer, Monad, MonadError, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
 import cats.effect.{ CancelToken, ConcurrentEffect, ExitCase, Fiber, IO, Resource, Sync, SyncIO }
-import cats.effect.syntax.bracket._
 import cats.instances.list._
 import cats.instances.option._
 import cats.syntax.apply._
+import cats.syntax.applicative._
+import cats.syntax.applicativeError._
 import cats.syntax.either._
+import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.functor._
+import cats.syntax.monadError._
 import cats.syntax.traverse._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext }
@@ -19,7 +22,11 @@ import com.github.fehu.opentracing.v2.Traced.ActiveSpan
 import com.github.fehu.opentracing.v2.transformer.TracedT
 
 private[opentracing] trait TracedTTracedInstances extends TracedTTracedLowPriorityInstances {
-  implicit def tracedStateTracedInstance[F[_]: Sync]: Traced2[TracedT, F] = new TracedTTracedInstance
+  /**
+   *  @note [[Defer]] and [[MonadError]] for [[TracedT]] are provided by
+   *        [[IndexedStateT.catsDataDeferForIndexedStateT]] and [[IndexedStateT.catsDataMonadErrorForIndexedStateT]].
+   */
+  implicit def tracedStateTracedInstance[F[_]: Defer: MonadError[*[_], Throwable]]: Traced2[TracedT, F] = new TracedTTracedInstance
 
   implicit def tracedTParallelInstance[F[_]](implicit par: Parallel[F]): Parallel.Aux[TracedT[F, *], TracedTParallelInstance.Par[par.F, *]] =
     new TracedTParallelInstance[F, par.F]()(par)
@@ -39,16 +46,17 @@ private[opentracing] trait TracedTTracedLowPriorityInstances {
   implicit def tracedTSyncInstance[F[_]: Sync]: Sync[TracedT[F, *]] = new TracedTSyncInstance[F]
 }
 
-private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
+private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: MonadError[F, Throwable])
   extends TracedTTracedInstance.TracedInterface[F] with Traced2[TracedT, F] { self =>
 
   import TracedTTracedInstance._
 
   private def state = StateT.get[F, State]
+  private def delay = Tools.delay[F]
 
   def pure[A](a: A): TracedT[F, A] = StateT.pure(a)
 
-  def defer[A](fa: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(sync.delay(fa)).flatMap(locally)
+  def defer[A](fa: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(delay(fa)).flatMap(locally)
 
   def lift[A](fa: F[A]): TracedT[F, A] = StateT.liftF(fa)
 
@@ -73,7 +81,7 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
     new InjectInterface(
       for {
         s <- state
-        c <- StateT liftF sync.delay{ s.tracer.extract(format, carrier) }
+        c <- StateT liftF delay{ s.tracer.extract(format, carrier) }
       } yield c
     )
 
@@ -84,7 +92,7 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
   def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
     for {
       s <- state
-      o <- StateT liftF s.currentSpan.traverse(span => sync.delay(s.tracer.inject(span.context(), format, carrier)))
+      o <- StateT liftF s.currentSpan.traverse(span => delay(s.tracer.inject(span.context(), format, carrier)))
     } yield o.map(_ => carrier)
 
 
@@ -98,11 +106,13 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
 }
 
 object TracedTTracedInstance {
-  abstract class TracedInterface[F[_]: Sync] extends Traced.Interface[TracedT[F, *]] {
+  abstract class TracedInterface[F[_]: Defer: MonadError[*[_], Throwable]] extends Traced.Interface[TracedT[F, *]] {
     protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]]
 
     private def state = StateT.get[F, State]
     private def setState = StateT.set[F, State] _
+
+    private def delay = Tools.delay[F]
 
     def apply[A](op: String, tags: Traced.Tag*)(fa: TracedT[F, A]): TracedT[F, A] =
       for {
@@ -134,12 +144,8 @@ object TracedTTracedInstance {
         _ <- StateT liftF state.hooks.justAfterStart(span1).traverse_(_(span1))
         _ <- setState(state.copy(currentSpan = Some(span)))
         fin = (e: Option[Throwable]) => state.hooks.beforeStop(span1)(e).traverse_(_(span1))
-                                             .guarantee(Sync[F].delay{ span.finish() })
-        a <- fa.transformF(_.guaranteeCase {
-               case ExitCase.Completed => fin(None)
-               case ExitCase.Canceled  => fin(Some(new Exception("Canceled")))
-               case ExitCase.Error(e)  => fin(Some(e))
-             })
+                                             .guarantee0(_ => delay{ span.finish() })
+        a <- fa.transformF(_.guarantee0(e => fin(e.left.toOption)))
       } yield a
     }
 
@@ -148,8 +154,17 @@ object TracedTTracedInstance {
         s    <- state
         span1 = CurrentSpan(span.maybe)
         _    <- StateT liftF s.hooks.beforeStop(CurrentSpan(span.maybe))(e).traverse_(_(span1))
-                                    .guarantee(Sync[F].delay{ span.maybe.foreach(_.finish()) })
+                                    .guarantee0(_ => delay{ span.maybe.foreach(_.finish()) })
       } yield ()
+
+    private implicit class GuaranteeOps[A](fa: F[A]) {
+      def guarantee0(f: Either[Throwable, A] => F[Unit]): F[A] =
+        for {
+          ea <- fa.attempt
+          _  <- f(ea)
+          a  <- ea.pure[F].rethrow
+        } yield a
+    }
   }
 }
 
