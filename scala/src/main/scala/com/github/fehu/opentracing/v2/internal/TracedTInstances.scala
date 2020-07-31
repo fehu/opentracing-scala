@@ -70,6 +70,13 @@ private[opentracing] trait TracedTTracedInstances
   /** Requires implicit [[Traced.RunParams]] in scope.  */
   implicit def tracedTConcurrentEffectInstance[F[_]: ConcurrentEffect](implicit params: Traced.RunParams): ConcurrentEffect[TracedT[F, *]] =
     new TracedTConcurrentEffectInstance
+
+  /** Requires implicit [[Traced.RunParams.Partial]] and [[ActiveSpan]] in scope.  */
+  implicit def tracedTConcurrentEffectInstance2[F[_]: ConcurrentEffect]
+                                               (implicit partial: Traced.RunParams.Partial,
+                                                         active: ActiveSpan
+                                               ): ConcurrentEffect[TracedT[F, *]] =
+    tracedTConcurrentEffectInstance(ConcurrentEffect[F], partial(active))
 }
 
 private[opentracing] trait TracedTTracedLowPriorityInstances1 {
@@ -77,6 +84,12 @@ private[opentracing] trait TracedTTracedLowPriorityInstances1 {
 
   /** Requires implicit [[Traced.RunParams]] in scope.  */
   implicit def tracedTEffectInstance[F[_]: Effect](implicit params: Traced.RunParams): Effect[TracedT[F, *]] = new TracedTEffectInstance
+
+  /** Requires implicit [[Traced.RunParams.Partial]] and [[ActiveSpan]] in scope.  */
+  implicit def tracedTEffectInstance2[F[_]: Effect](implicit partial: Traced.RunParams.Partial,
+                                                             active: ActiveSpan
+                                                   ): Effect[TracedT[F, *]] =
+    tracedTEffectInstance(Effect[F], partial(active))
 }
 
 private[opentracing] trait TracedTTracedLowPriorityInstances2 {
