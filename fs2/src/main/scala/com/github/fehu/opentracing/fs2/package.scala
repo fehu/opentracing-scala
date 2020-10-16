@@ -1,42 +1,43 @@
 package com.github.fehu.opentracing
 
-import cats.~>
-import cats.arrow.FunctionK
-import cats.effect.{ ExitCase, Sync }
-import cats.effect.syntax.bracket._
-import cats.instances.option._
-import cats.syntax.flatMap._
-import cats.syntax.foldable._
-import cats.syntax.functor._
 import _root_.fs2.Stream
-import com.github.fehu.opentracing.Tracing.TracingSetup
-import com.github.fehu.opentracing.effect.ResourceTracing
-import io.opentracing.Tracer
+import cats.~>
+import cats.effect.{ Bracket, Resource }
+import cats.syntax.apply._
+import io.opentracing.SpanContext
+import io.opentracing.propagation.Format
+
+import com.github.fehu.opentracing.Traced.ActiveSpan
 
 package object fs2 {
-  implicit def fs2StreamTracing[F[_]](implicit sync: Sync[F], t: Tracer, setup: TracingSetup): Tracing[Stream[F, *], Stream[F, *]] =
-    new Tracing[Stream[F, *], Stream[F, *]] {
-      import sync.delay
 
-      protected def noTrace: Stream[F, *] ~> Stream[F, *] = FunctionK.id
-      protected def build(spanBuilder: Tracer.SpanBuilder, activate: Boolean): Stream[F, *] ~> Stream[F, *] =
-        λ[Stream[F, *] ~> Stream[F, *]] { s =>
-          Stream.force {
-            for {
-              ((span, _), close) <- ResourceTracing.spanAndScopeResource1(spanBuilder, activate).allocated
-              reportAndClose = (err: Throwable) => delay(setup.beforeStop(Left(err))(span)).guarantee(close)
-            } yield s.onFinalizeCase {
-                        case ExitCase.Completed  => close
-                        case ExitCase.Error(err) => reportAndClose(err)
-                        case ExitCase.Canceled   => reportAndClose(new Exception("Canceled"))
-                      }
-          }
-        }
-    }
+  final implicit class TracedFs2StreamOps[F[_]: Bracket[*[_], Throwable], A](stream: Stream[F, A])(implicit t: Traced[F]) {
+    def trace(operation: String, tags: Traced.Tag*): Stream[F, A] =
+      common(_.spanResource(operation, tags: _*))
 
-  def logStreamElems[F[_], A](s: Stream[F, A])(log: (SpanLog, A) => Unit)(implicit sync: Sync[F], t: Tracer): Stream[F, A] =
-    s.evalTap(a => effect.activeSpan.flatMap(spanOpt =>
-      spanOpt.traverse_(span => sync.delay(log(new SpanLog(() => span), a)))
-    ))
+    def inject(context: SpanContext)(operation: String, tags: Traced.Tag*): Stream[F, A] =
+      common(_.injectContext(context).spanResource(operation, tags: _*))
+
+    def inject(context: Option[SpanContext])(operation: String, tags: Traced.Tag*): Stream[F, A] =
+      context.map(inject(_)(operation, tags: _*)).getOrElse(stream)
+
+    def injectFrom[C](format: Format[C])(carrier: C)(operation: String, tags: Traced.Tag*): Stream[F, A] =
+      common(_.injectContextFrom(format)(carrier).spanResource(operation, tags: _*))
+
+    def injectFromOpt[C](format: Format[C])(carrier: Option[C])(operation: String, tags: Traced.Tag*): Stream[F, A] =
+      carrier.map(injectFrom(format)(_)(operation, tags: _*)).getOrElse(stream)
+
+    def tracedLog(f: A => Seq[(String, Any)]): Stream[F, A] =
+      stream.evalTap(a => t.currentSpan.log(f(a): _*))
+
+    def tracedElemLog: Stream[F, A] = stream.evalTap(t.currentSpan log _.toString)
+
+    private def common(f: Traced[F] => Resource[F, ActiveSpan]) =
+      for {
+        (span, finish) <- Stream eval f(t).allocated
+        a <- stream.translate(λ[F ~> F](t.recoverCurrentSpan(span) *> _))
+                   .onFinalize(finish)
+      } yield a
+  }
 
 }

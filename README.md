@@ -1,113 +1,45 @@
 # opentracing-scala
 
-#### Common interface for tracing
+Functional interface for opentracing and an implementation, based on `cats.data.StateT`.
 
+--------------------------------
+
+Tracing monad is defined over type constructor `T[_[*], *]`, that wraps the underlying monad.
+But its interface is separated into two typeclasses.
+
+`Traced[F[_]]` ignores underlying type constructor and defines most operations:
 ```scala
-trait Interface[Out] {
-  def apply(operation: String, tags: Tag*): Out
-  def apply(activate: Boolean, operation: String, tags: Tag*): Out
-  def apply(parent: Span, operation: String, tags: Tag*): Out
-  def apply(parent: Span, activate: Boolean, operation: String, tags: Tag*): Out
-  def apply(parent: Option[Span], activate: Boolean, operation: String, tags: Map[String, TagValue]): Out
-
-  def map[R](f: Out => R): Interface[R]
-}
-```
-
-#### `Tracing` typeclass
-
-`Tracing[F0[_], F1[_]]` defines instruments for building `Interface[F1[A]]` from `F0[A]` input.
-
-There is auto derivation of `Tracing` instances for types that are both `cats.Defer` and `cats.MonadError`, like `EitherT[Eval, Throwable, ?]` or `IO`.
-
-
-#### `Activating` typeclass
-
-`Activating[F[_]]` activates given span arround execution `F`.
-
-```scala
-/** Run `F ~> F` activating given span. */
-trait Activating[F[_]] {
-  def apply(
-    span: Span,
-    onClose: Either[Throwable, Any] => Span => Unit = _ => _ => {}
-  ): F ~> F
-}
-```
-
-There is auto derivation of `Activating` instances for types that are both `cats.Defer` and `cats.MonadError`, like `EitherT[Eval, Throwable, ?]` or `IO`.
-
-
-### Syntax
-
-#### `trace`
-
-`com.gihub.fehu.opentracing.trace` provides interfaces built from `Tracing[Later, Eval]`.
-`trace.now` will execute inmediately while `trace.later` would wrap traced code in `cats.Eval`.
-
-```scala
-trace.now("op", "tag" -> "?"){
-  // do something
-}
-```
-
-#### `tracing`
-
-Is provided for input `F0[A]` by an implicit class if there is non-ambiguous `Tracing[F0[A], ?]` instance.
-
-```scala
-  IO { ??? }.tracing("IO")
-```
-
-
-#### `activate`
-```scala
-def activate[R](span: Span)(r: => R)(implicit tracer: Tracer): R
-```
-
-Defined in package object `com.gihub.fehu.opentracing`, `activate` registers given span with `Tracer`'s scope manager before execution and closes the scope in the end.
-
-#### `activating`
-Implicit syntax for types with instances of `Activating`.
-
-```scala
-IO { ... }.activating(span)
-```
-
-#### logging
-Implicit `com.github.fehu.opentracing.SpanOps` defines more logging syntax for `Span`.
-
-## Akka
-
-#### `TracingActor`
-The actor stores and processes scopes received inside `TracedMessage`.
-The received span can be accessed with `actorSpan()` method (thread usnafe).
-
-Extensions:
-- `TracingActor.Activating` 
-  The actor activates and closes a scope around its `receive` on receival of `TracedMessage`.
-- `TracingActor.ChildSpan`
-  The actor creates a child span on receival of `TracedMessage`.
-- `TracingActor.ActivatingChildSpan`
-  The actor creates a child span, activates and finishes it around its `receive` on receival of `TracedMessage`.
-- `TracingActor.AlwaysChildSpan`
-  The actor creates a child span for any message, with no parent if the message didn't contain one.
-
------------------------
-
-Package `com.github.fehu.opentracing.akka` provides syntax for tracing messages sent to actors.
-
-#### `ask`
-```scala
-ask(actor, "Hello!")
-  .tracing("Introducing", tags = ...)
-```
-
-#### `TracingLoggingAdapter`
-An re-implementation of akka's `LoggingAdapter` (uses `abstract override`) that sends log enties both to original adapter and currently active span.
-
+  def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
+  def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
+    
+  def pure[A](a: A): F[A]
+  def defer[A](fa: => F[A]): F[A]
   
+  def currentSpan: Traced.SpanInterface[F]
+  
+  def injectContext(context: SpanContext): Traced.Interface[F]
+  def injectContextFrom[C](carrier: C, format: Format[C]): Traced.Interface[F]
+  
+  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): F[Option[C0]] 
+```
 
+`Traced2[T[_[*], *], F[_]]` refines operations, that require knowing underlying functor:
+```scala
+  def currentRunParams: F[U, Traced.RunParams]
+  def run[A](traced: F[U, A], params: Traced.RunParams): U[A]
+  
+  def lift[A](ua: U[A]): F[U, A]
+  def mapK[G[_]](f: U ~> G): F[U, *] ~> F[G, *]
+``` 
+
+### Traced Transformer
+
+Implementation using cats' state transformer.
+```scala
+  type TracedT[F[_], A] = StateT[F, State, A]
+```
+
+Provides (experimental) instances of `Sync` and `ConcurrentEffect`.
 
 # opentracing-jaeger-scalac-implicits
 
