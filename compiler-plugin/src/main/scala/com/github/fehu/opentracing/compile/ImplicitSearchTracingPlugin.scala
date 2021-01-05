@@ -41,7 +41,6 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
 
     override def pluginsNotifyImplicitSearchResult(result: global.analyzer.SearchResult): Unit = {
       val span = spansStack.pop()
-      span.setTag("result", result.toString)
       span.setTag("isSuccess", result.isSuccess)
       val symb = result.tree.symbol
       val providedBy = if (symb eq null) typeNames.NO_NAME.toString
