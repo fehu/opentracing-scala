@@ -52,6 +52,12 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
                       }
       span.setTag("provided by", providedBy)
       span.finish()
+      if (spansStack.isEmpty) {
+        // A workaround for `ClassNotFoundException`s on closing the tracer.
+        // Found at [[https://github.com/jaegertracing/jaeger-client-java/issues/593]]
+        Class.forName("io.jaegertracing.internal.reporters.RemoteReporter$CloseCommand")
+        Class.forName("io.jaegertracing.agent.thrift.Agent$Client")
+      }
       super.pluginsNotifyImplicitSearchResult(result)
     }
 
