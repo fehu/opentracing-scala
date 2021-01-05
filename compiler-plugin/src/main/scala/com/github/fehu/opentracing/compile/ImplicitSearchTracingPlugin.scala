@@ -1,5 +1,6 @@
 package com.github.fehu.opentracing.compile
 
+import scala.collection.mutable
 import scala.reflect.internal.util.NoSourceFile
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.{ Plugin, PluginComponent }
@@ -7,7 +8,7 @@ import scala.tools.nsc.plugins.{ Plugin, PluginComponent }
 import io.jaegertracing.Configuration
 import io.jaegertracing.Configuration.SamplerConfiguration
 import io.jaegertracing.internal.samplers.ConstSampler
-import io.opentracing.{ Tracer, Scope => TScope }
+import io.opentracing.{ Span, Tracer }
 
 class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
   import ImplicitSearchTracingPlugin.tracer
@@ -17,39 +18,40 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
   val description: String = "Traces implicit searches performed by scalac and reports them to local jaegertracing backend"
   val components: List[PluginComponent] = Nil
 
+  private val spansStack = mutable.Stack.empty[Span]
+
   analyzer.addAnalyzerPlugin(new ImplicitsTracingAnalyzer)
 
   class ImplicitsTracingAnalyzer extends analyzer.AnalyzerPlugin {
     override def pluginsNotifyImplicitSearch(search: global.analyzer.ImplicitSearch): Unit = {
       val pos = search.pos
       val code = if (pos.source != NoSourceFile) pos.lineContent else "<NoSourceFile>"
-      tracer
+      val span = tracer
         .buildSpan(showShort(search.pt))
+        .asChildOf(spansStack.headOption.orNull)
         .withTag("type", search.pt.safeToString)
         .withTag("file", pos.source.path)
         .withTag("line", pos.line)
         .withTag("code", code)
         .withTag("pos",  pos.toString)
-        .startActive(true)
+        .start()
+      spansStack.push(span)
       super.pluginsNotifyImplicitSearch(search)
     }
 
     override def pluginsNotifyImplicitSearchResult(result: global.analyzer.SearchResult): Unit = {
-      val scope = tracer.scopeManager.active()
-      if (scope ne null) {
-        val span = scope.span()
-        span.setTag("result", result.toString)
-        span.setTag("isSuccess", result.isSuccess)
-        val symb = result.tree.symbol
-        val providedBy = if (symb eq null) typeNames.NO_NAME.toString
-                         else {
-                            val rt = result.tree.tpe.resultType
-                            val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
-                            s"${symb.kindString} ${symb.fullNameString}$targs"
-                        }
-        span.setTag("provided by", providedBy)
-      }
-      closeScopeSafe(scope)
+      val span = spansStack.pop()
+      span.setTag("result", result.toString)
+      span.setTag("isSuccess", result.isSuccess)
+      val symb = result.tree.symbol
+      val providedBy = if (symb eq null) typeNames.NO_NAME.toString
+                       else {
+                          val rt = result.tree.tpe.resultType
+                          val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
+                          s"${symb.kindString} ${symb.fullNameString}$targs"
+                      }
+      span.setTag("provided by", providedBy)
+      span.finish()
       super.pluginsNotifyImplicitSearchResult(result)
     }
 
@@ -59,19 +61,13 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
         case Array(name, _*) => name
       }
     private def showShort(tpe: Type): String = showName(tpe.typeConstructor.toString)
-
-    private def closeScopeSafe(scope: TScope): Unit =
-      if (scope ne null) {
-        try scope.close()
-        catch { case _: IllegalStateException => }
-      }
   }
 }
 
 object ImplicitSearchTracingPlugin {
   val tracerServiceName = "implicit search"
 
-  implicit val tracer: Tracer = Configuration
+  protected val tracer: Tracer = Configuration
     .fromEnv(tracerServiceName)
     .withSampler(
       SamplerConfiguration.fromEnv()
