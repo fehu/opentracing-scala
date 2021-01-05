@@ -50,6 +50,9 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
                           s"${symb.kindString} ${symb.fullNameString}$targs"
                       }
       span.setTag("provided by", providedBy)
+      result.subst.from zip result.subst.to foreach { case (from, to) =>
+        span.setTag(s"type subst ${from.name}", to.toLongString)
+      }
       span.finish()
       if (spansStack.isEmpty) {
         // A workaround for `ClassNotFoundException`s on closing the tracer.
