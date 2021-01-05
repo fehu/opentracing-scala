@@ -50,8 +50,8 @@ and reports them to local jaegertracing backend.
 #### Usage 
 - Put to your `build.sbt`
     ```sbtshell
-    addCompilerPlugin("com.github.fehu" %% "opentracing-jaeger-scalac-implicits" % "0.1.2")
+    addCompilerPlugin("com.github.fehu" %% "opentracing-jaeger-scalac-implicits" % "0.1.3")
     ```
-- Run, for example, [all-in-one](https://www.jaegertracing.io/docs/1.8/getting-started/#all-in-one) jaeger backend with docker
+- Run, for example, [all-in-one](https://www.jaegertracing.io/docs/latest/getting-started/#all-in-one) jaeger backend with docker
 - Compile your project
 - See the traces at http://localhost:16686
