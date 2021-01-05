@@ -1,6 +1,6 @@
 name := "opentracing-jaeger-scalac-implicits"
 
-version := "0.1.1"
+version := "0.1.2"
 
 libraryDependencies ++= Seq(
   Dependencies.`scala-compiler`.value,
