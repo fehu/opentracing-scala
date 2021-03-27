@@ -1,7 +1,7 @@
 // scalac plugin has its own version
 
-val scala212 = "2.12.12"
-val scala213 = "2.13.3"
+val scala212 = "2.12.13"
+val scala213 = "2.13.5"
 
 ThisBuild / crossScalaVersions := List(scala213)
 ThisBuild / scalaVersion     := scala213
@@ -56,3 +56,5 @@ lazy val testDependencies = Seq(
 lazy val compilerPlugin = project in file("compiler-plugin") settings (
   crossScalaVersions := List(scala212, scala213)
 )
+
+addCommandAlias("fullDependencyUpdates", ";dependencyUpdates; reload plugins; dependencyUpdates; reload return")
