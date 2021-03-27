@@ -20,30 +20,30 @@ object TracedT {
     State(params.tracer, params.hooks, params.activeSpan.maybe)
 }
 
-object TracedTIO {
-  def pure[A](a: A): TracedTIO[A] = StateT.pure(a)
-  lazy val unit: TracedTIO[Unit] = pure(())
+object TracedIO {
+  def pure[A](a: A): TracedIO[A] = StateT.pure(a)
+  lazy val unit: TracedIO[Unit] = pure(())
 
-  def liftF[F[_]: Effect, A](fa: F[A]): TracedTIO[A] = StateT.liftF(fa.toIO)
-  def liftIO[A](io: IO[A]): TracedTIO[A] = StateT.liftF(io)
+  def liftF[F[_]: Effect, A](fa: F[A]): TracedIO[A] = StateT.liftF(fa.toIO)
+  def liftIO[A](io: IO[A]): TracedIO[A] = StateT.liftF(io)
 
-  def raiseError[A](err: Throwable): TracedTIO[A] = liftF(IO.raiseError[A](err))
+  def raiseError[A](err: Throwable): TracedIO[A] = liftF(IO.raiseError[A](err))
 
-  def defer[A](tio: => TracedTIO[A]): TracedTIO[A] = tracedTIO.defer(tio)
-  def deferIO[A](io: => IO[A]): TracedTIO[A] = defer(liftIO(io))
-  def delay[A](a: => A): TracedTIO[A] = defer(pure(a))
+  def defer[A](tio: => TracedIO[A]): TracedIO[A] = tracedIO.defer(tio)
+  def deferIO[A](io: => IO[A]): TracedIO[A] = defer(liftIO(io))
+  def delay[A](a: => A): TracedIO[A] = defer(pure(a))
 
-  def currentSpan: Traced.SpanInterface[TracedTIO] = tracedTIO.currentSpan
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedTIO[Option[C0]] =
-    tracedTIO.extractContext(carrier, format)
+  def currentSpan: Traced.SpanInterface[TracedIO] = tracedIO.currentSpan
+  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedIO[Option[C0]] =
+    tracedIO.extractContext(carrier, format)
 
-  def liftK[F[_]: Effect]: F ~> TracedTIO = λ[F ~> TracedTIO](liftF(_))
-  def mapK[F[_]: LiftIO]: TracedTIO ~> TracedT[F, *] = λ[TracedTIO ~> TracedT[F, *]](_.mapK(LiftIO.liftK))
-  def comapK[F[_]: Effect]: TracedT[F, *] ~> TracedTIO = λ[TracedT[F, *] ~> TracedTIO](_.mapK(Effect.toIOK))
+  def liftK[F[_]: Effect]: F ~> TracedIO = λ[F ~> TracedIO](liftF(_))
+  def mapK[F[_]: LiftIO]: TracedIO ~> TracedT[F, *] = λ[TracedIO ~> TracedT[F, *]](_.mapK(LiftIO.liftK))
+  def comapK[F[_]: Effect]: TracedT[F, *] ~> TracedIO = λ[TracedT[F, *] ~> TracedIO](_.mapK(Effect.toIOK))
 
-  def runK(params: Traced.RunParams): TracedTIO ~> IO = TracedT.runK(params)
-  def traceK(operation: String, tags: Traced.Tag*): IO ~> TracedTIO =
-    λ[IO ~> TracedTIO](io => tracedTIO(operation, tags: _*)(liftF(io)))
+  def runK(params: Traced.RunParams): TracedIO ~> IO = TracedT.runK(params)
+  def traceK(operation: String, tags: Traced.Tag*): IO ~> TracedIO =
+    λ[IO ~> TracedIO](io => tracedIO(operation, tags: _*)(liftF(io)))
 
-  private lazy val tracedTIO = new TracedTTracedInstance[IO]
+  private lazy val tracedIO = new TracedTTracedInstance[IO]
 }

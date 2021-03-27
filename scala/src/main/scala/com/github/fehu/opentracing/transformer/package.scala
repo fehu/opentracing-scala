@@ -10,5 +10,5 @@ package object transformer extends TracedTTracedInstances {
 
   type TracedT[F[_], A] = StateT[F, State, A]
 
-  type TracedTIO[A] = TracedT[IO, A]
+  type TracedIO[A] = TracedT[IO, A]
 }
