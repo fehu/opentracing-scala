@@ -13,8 +13,8 @@ class TracedTIOSpec extends TraceSpec[TracedTIO] {
   implicit lazy val effect: Effect[TracedTIO] = tracedTEffectInstance
 
   implicit lazy val csIO: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit lazy val cs: ContextShift[TracedTIO] = ContextShift.deriveStateT
+  implicit lazy val cs: ContextShift[TracedTIO] = tracedTContextShiftInstance
 
   implicit lazy val timerIO: Timer[IO] = IO.timer(ExecutionContext.global)
-  implicit lazy val timer: Timer[TracedTIO] = Timer.deriveStateT
+  implicit lazy val timer: Timer[TracedTIO] = tracedTTimerInstance
 }

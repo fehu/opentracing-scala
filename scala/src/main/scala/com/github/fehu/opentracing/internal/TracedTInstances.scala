@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.internal
 
 import cats.{ Applicative, CommutativeApplicative, Defer, Monad, MonadError, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
-import cats.effect.{ Async, CancelToken, Concurrent, ConcurrentEffect, Effect, ExitCase, Fiber, IO, LiftIO, Resource, Sync, SyncIO }
+import cats.effect._
 import cats.instances.list._
 import cats.instances.option._
 import cats.syntax.apply._
@@ -23,11 +23,12 @@ import com.github.fehu.opentracing.transformer.TracedT
 
 /**
  * {{{
- *  ===============================================
- *                                    = Instances =
- *   +---------+   +----------+       =============
- *   | Traced2 |   | Parallel |
- *   +---------+   +----------+
+ *  ====================================================
+ *                                         = Instances =
+ *                                         =============
+ *   +---------+ +----------+ +--------------+ +-------+
+ *   | Traced2 | | Parallel | | ContextShift | | Timer |
+ *   +---------+ +----------+ +--------------+ +-------+
  *
  *      +------------------+
  *      | ConcurrentEffect |
@@ -66,6 +67,12 @@ private[opentracing] trait TracedTTracedInstances
 
   implicit def tracedTParallelInstance[F[_]](implicit par: Parallel[F]): Parallel.Aux[TracedT[F, *], TracedTParallelInstance.Par[par.F, *]] =
     new TracedTParallelInstance()(par)
+
+  /** Alias for [[ContextShift.deriveStateT]] */
+  implicit def tracedTContextShiftInstance[F[_]: ContextShift: Monad]: ContextShift[TracedT[F, *]] = ContextShift.deriveStateT
+
+  /** Alias for [[Timer.deriveStateT]] */
+  implicit def tracedTTimerInstance[F[_]: Applicative: Timer]: Timer[TracedT[F, *]] = Timer.deriveStateT
 
   /** Requires implicit [[Traced.RunParams]] in scope.  */
   implicit def tracedTConcurrentEffectInstance[F[_]: ConcurrentEffect](implicit params: Traced.RunParams): ConcurrentEffect[TracedT[F, *]] =
