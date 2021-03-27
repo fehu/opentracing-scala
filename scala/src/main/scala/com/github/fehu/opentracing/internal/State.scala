@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing.internal
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 import cats.{ Defer, MonadError, ~> }
 import cats.instances.option._

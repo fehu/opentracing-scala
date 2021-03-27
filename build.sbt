@@ -3,14 +3,15 @@
 val scala212 = "2.12.13"
 val scala213 = "2.13.5"
 
-ThisBuild / crossScalaVersions := List(scala213)
-ThisBuild / scalaVersion     := scala213
-ThisBuild / version          := "0.3.2-SNAPSHOT"
-ThisBuild / organization     := "com.github.fehu"
+ThisBuild / crossScalaVersions := List(scala212, scala213)
+ThisBuild / scalaVersion       := scala213
+ThisBuild / version            := "0.3.2-SNAPSHOT"
+ThisBuild / organization       := "com.github.fehu"
 
 inThisBuild(Seq(
   addCompilerPlugin(Dependencies.`kind-projector`),
-  addCompilerPlugin(Dependencies.`monadic-for`)
+  addCompilerPlugin(Dependencies.`monadic-for`),
+  Compile / scalacOptions ++= Seq("-feature", "-deprecation")
 ))
 
 lazy val root = (project in file("."))
@@ -28,7 +29,13 @@ lazy val scala = (project in file("scala"))
       Dependencies.`cats-core`,
       Dependencies.`cats-effect`
     ),
-    libraryDependencies ++= testDependencies
+    libraryDependencies ++= testDependencies,
+    Compile / scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => List("-Ypartial-unification")
+        case _             => Nil
+      }
+    }
   )
 
 lazy val akka = (project in file("akka"))

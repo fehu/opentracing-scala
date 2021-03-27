@@ -66,7 +66,7 @@ private[opentracing] trait TracedTTracedInstances
     new TracedTTracedInstance
 
   implicit def tracedTParallelInstance[F[_]](implicit par: Parallel[F]): Parallel.Aux[TracedT[F, *], TracedTParallelInstance.Par[par.F, *]] =
-    new TracedTParallelInstance()(par)
+    new TracedTParallelInstance[F, par.F]()(par)
 
   /** Alias for [[ContextShift.deriveStateT]] */
   implicit def tracedTContextShiftInstance[F[_]: ContextShift: Monad]: ContextShift[TracedT[F, *]] = ContextShift.deriveStateT
