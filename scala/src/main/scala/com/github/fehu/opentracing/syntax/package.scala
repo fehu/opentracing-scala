@@ -55,20 +55,20 @@ package object syntax extends LowPrioritySyntax {
   }
 
   object TracedFunctions extends TracedFunctions {
-    protected[syntax] class Extract[F[_]] {
+    final class Extract[F[_]] private[syntax] () {
       def apply[C0 <: C, C](carrier: C0, format: Format[C])(implicit traced: Traced[F]): F[Option[C0]] =
         traced.extractContext(carrier, format)
     }
-    protected[syntax] class Trace[F[_]](operation: String, tags: Seq[Traced.Tag]) {
+    final class Trace[F[_]] private[syntax] (operation: String, tags: Seq[Traced.Tag]) {
       def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced(operation, tags: _*)(traced.defer(traced.pure(a)))
     }
-    protected[syntax] class Pure[F[_]] {
+    final class Pure[F[_]] private[syntax] () {
       def apply[A](a: A)(implicit traced: Traced[F]): F[A] = traced.pure(a)
     }
-    protected[syntax] class Defer[F[_]] {
+    final class Defer[F[_]] private[syntax] () {
       def apply[A](fa: => F[A])(implicit traced: Traced[F]): F[A] = traced.defer(fa)
     }
-    protected[syntax] class Delay[F[_]] {
+    final class Delay[F[_]] private[syntax] () {
       def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced.defer(traced.pure(a))
     }
     protected lazy val extractInstance = new TracedFunctions.Extract[cats.Id]
@@ -77,7 +77,7 @@ package object syntax extends LowPrioritySyntax {
     protected lazy val delayInstance = new TracedFunctions.Delay[cats.Id]
   }
 
-  final implicit class TracedIdOps(obj: Traced.type) extends TracedFunctions
+  final implicit class TracedObjOps(obj: Traced.type) extends TracedFunctions
 
   final implicit class Traced2Ops[F[_[*], *], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
     def runTraced(params: Traced.RunParams): G[A] = traced.run(fa, params)

@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing
 
-import scala.language.existentials
+import scala.language.{ existentials, implicitConversions }
 
 import cats.~>
 import cats.effect.Resource
