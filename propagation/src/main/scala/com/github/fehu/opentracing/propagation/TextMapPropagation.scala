@@ -24,7 +24,7 @@ final class TextMapPropagation private (map: mutable.SortedMap[String, String]) 
 
 object TextMapPropagation extends PropagationCompanion[TextMapPropagation] {
   def apply(): TextMapPropagation = new TextMapPropagation(mutable.SortedMap.empty)
-  def apply(repr: Map[String, String]): TextMapPropagation = new TextMapPropagation(mutable.SortedMap.from(repr))
+  def apply(repr: Map[String, String]): TextMapPropagation = new TextMapPropagation(mutable.SortedMap(repr.toSeq: _*))
 
   def format: Format[TextMap] = Format.Builtin.TEXT_MAP
 }
