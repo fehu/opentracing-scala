@@ -2,6 +2,6 @@ package com.github.fehu.opentracing.transformer
 
 import _root_.monix.eval.Task
 
-package object monix {
+object Monix {
   type TracedTask[A] = TracedT[Task, A]
 }
