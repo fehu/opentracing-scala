@@ -4,7 +4,7 @@ import cats.effect.{ ContextShift, Effect, Timer }
 import _root_.monix.eval.Task
 
 import com.github.fehu.opentracing.transformer._
-import com.github.fehu.opentracing.transformer.monix.TracedTask
+import com.github.fehu.opentracing.transformer.Monix.TracedTask
 import com.github.fehu.opentracing.{ TraceSpec, Traced }
 
 class TracedTaskSpec extends TraceSpec[TracedTask] {
