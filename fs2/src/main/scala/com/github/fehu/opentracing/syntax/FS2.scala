@@ -4,6 +4,7 @@ import _root_.fs2.Stream
 import cats.~>
 import cats.effect.{ Bracket, Resource }
 import cats.syntax.apply._
+import cats.syntax.option._
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
 
@@ -31,11 +32,11 @@ object FS2 {
       tracingElems { a => t.injectContext(context(a)).spanResource(trace(a)) }
 
     def traceUsageInjectingOpt(context: A => Option[SpanContext], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true): Stream[F, A] =
-      tracingElems { a =>
+      tracingElemsOpt { a =>
         context(a).fold(
-          if (traceEmpty) t.spanResource(trace(a)) else Resource.pure(ActiveSpan.empty)
+          if (traceEmpty) t.spanResource(trace(a)).some else None
         )(
-          t.injectContext(_).spanResource(trace(a))
+          t.injectContext(_).spanResource(trace(a)).some
         )
       }
 
@@ -45,11 +46,11 @@ object FS2 {
       }
 
     def traceUsageInjectingFromOpt[C](format: Format[C])(carrier: A => Option[C], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true): Stream[F, A] =
-      tracingElems { a =>
+      tracingElemsOpt { a =>
         carrier(a).fold(
-          if (traceEmpty) t.spanResource(trace(a)) else Resource.pure(ActiveSpan.empty)
+          if (traceEmpty) t.spanResource(trace(a)).some else None
         )(
-          t.injectContextFrom(format)(_).spanResource(trace(a))
+          t.injectContextFrom(format)(_).spanResource(trace(a)).some
         )
       }
 
@@ -68,6 +69,13 @@ object FS2 {
 
     private def tracingElems(f: A => Resource[F, Traced.ActiveSpan]): Stream[F, A] =
       stream.flatMap(a => Stream.resource(f(a)).as(a))
+
+    private def tracingElemsOpt(f: A => Option[Resource[F, Traced.ActiveSpan]]): Stream[F, A] =
+      stream.flatMap(a =>
+        f(a)
+          .map(Stream.resource(_).as(a))
+          .getOrElse(Stream.emit(a))
+      )
   }
 
 }
