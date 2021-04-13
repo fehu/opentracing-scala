@@ -94,11 +94,14 @@ package object syntax extends LowPrioritySyntax {
 
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])
                                                                (implicit t: Traced[F]) {
-    def tracedLifetime(operation: String, tags: Traced.Tag*): Resource[F, A] =
+    def traceLifetime(operation: String, tags: Traced.Tag*): Resource[F, A] =
       t.spanResource(operation, tags: _*).flatMap(_ => resource)
 
-    def tracedUsage(operation: String, tags: Traced.Tag*): Resource[F, A] =
+    def traceUsage(operation: String, tags: Traced.Tag*): Resource[F, A] =
       resource.flatTap(_ => t.spanResource(operation, tags: _*))
+
+    def traceUsage(trace: A => Traced.Operation.Builder): Resource[F, A] =
+      resource.flatTap { a => t.spanResource(trace(a))}
   }
 
 }

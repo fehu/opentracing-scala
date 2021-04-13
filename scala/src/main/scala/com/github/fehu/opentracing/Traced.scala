@@ -39,6 +39,19 @@ object Traced {
   trait Interface[F[_]] {
     def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
     def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
+
+    final def apply[A](op: Operation)(fa: F[A]): F[A] = apply(op.operation, op.tags: _*)(fa)
+    final def spanResource[A](op: Operation): Resource[F, ActiveSpan] = spanResource(op.operation, op.tags: _*)
+
+    final def apply[A](builder: Operation.Builder)(fa: F[A]): F[A] = apply(builder(Operation))(fa)
+    final def spanResource[A](builder: Operation.Builder): Resource[F, ActiveSpan] = spanResource(builder(Operation))
+  }
+
+  final case class Operation(operation: String, tags: Seq[Traced.Tag])
+  object Operation {
+    def span(op: String, tags: Traced.Tag*): Operation = new Operation(op, tags)
+
+    type Builder = Operation.type => Operation
   }
 
   class Tag(val apply: Taggable.PartiallyApplied) extends AnyVal

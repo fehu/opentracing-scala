@@ -5,7 +5,7 @@ val scala213 = "2.13.5"
 
 ThisBuild / crossScalaVersions := List(scala212, scala213)
 ThisBuild / scalaVersion       := scala213
-ThisBuild / version            := "0.3.3"
+ThisBuild / version            := "0.3.4-SNAPSHOT"
 ThisBuild / organization       := "com.github.fehu"
 
 inThisBuild(Seq(
