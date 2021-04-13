@@ -3,12 +3,14 @@ package com.github.fehu.opentracing
 import scala.language.existentials
 
 import cats.{ Applicative, Defer, FlatMap, Functor, Monad, ~> }
-import cats.effect.Resource
+import cats.effect.{ Resource, Sync }
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import io.opentracing.{ SpanContext, Tracer }
 import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.internal.syntax.LowPrioritySyntax
+import com.github.fehu.opentracing.propagation.{ Propagation, PropagationCompanion }
 
 package object syntax extends LowPrioritySyntax {
 
@@ -26,6 +28,12 @@ package object syntax extends LowPrioritySyntax {
 
     def injectFromOpt[C](format: Format[C])(carrier: Option[C])(operation: String, tags: Traced.Tag*): F[A] =
       carrier.map(injectFrom(format)(_)(operation, tags: _*)).getOrElse(fa)
+
+    def injectPropagated[C <: Propagation](carrier: C)(operation: String, tags: Traced.Tag*): F[A] =
+      traced.injectContextFrom(carrier.format)(carrier.underlying)(operation, tags: _*)(fa)
+
+    def injectPropagatedOpt[C <: Propagation](carrier: Option[C])(operation: String, tags: Traced.Tag*): F[A] =
+      carrier.map(c => injectPropagated(c)(operation, tags: _*)).getOrElse(fa)
   }
 
   sealed trait TracedFunctions {
@@ -58,6 +66,12 @@ package object syntax extends LowPrioritySyntax {
     final class Extract[F[_]] private[syntax] () {
       def apply[C0 <: C, C](carrier: C0, format: Format[C])(implicit traced: Traced[F]): F[Option[C0]] =
         traced.extractContext(carrier, format)
+
+      def to[C <: Propagation](implicit companion: PropagationCompanion[C], traced: Traced[F], sync: Sync[F]): F[Option[C]] =
+        for {
+          carrier <- sync.delay { companion() }
+          uOpt    <- apply(carrier.underlying, companion.format)
+        } yield uOpt.as(carrier)
     }
     final class Trace[F[_]] private[syntax] (operation: String, tags: Seq[Traced.Tag]) {
       def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced(operation, tags: _*)(traced.defer(traced.pure(a)))

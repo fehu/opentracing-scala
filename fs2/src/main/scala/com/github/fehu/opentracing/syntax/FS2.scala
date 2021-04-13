@@ -9,6 +9,7 @@ import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.Traced.ActiveSpan
+import com.github.fehu.opentracing.propagation.{ Propagation, PropagationCompanion }
 
 object FS2 {
 
@@ -51,6 +52,14 @@ object FS2 {
           t.injectContextFrom(format)(_).spanResource(trace(a))
         )
       }
+
+    def traceUsageInjectingPropagated[C <: Propagation](carrier: A => C, trace: A => Traced.Operation.Builder)
+                                                       (implicit companion: PropagationCompanion[C]): Stream[F, A] =
+      traceUsageInjectingFrom(companion.format)(carrier andThen (_.underlying), trace)
+
+    def traceUsageInjectingPropagatedOpt[C <: Propagation](carrier: A => Option[C], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true)
+                                                          (implicit companion: PropagationCompanion[C]): Stream[F, A] =
+      traceUsageInjectingFromOpt(companion.format)(carrier andThen (_.map(_.underlying)), trace, traceEmpty)
 
     def tracedLog(f: A => Seq[(String, Any)]): Stream[F, A] =
       stream.evalTap(a => t.currentSpan.log(f(a): _*))

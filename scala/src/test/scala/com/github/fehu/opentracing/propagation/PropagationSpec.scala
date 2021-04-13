@@ -7,7 +7,6 @@ import cats.syntax.functor._
 import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 
-import com.github.fehu.opentracing.propagation.syntax._
 import com.github.fehu.opentracing.syntax._
 import com.github.fehu.opentracing.{ Spec, Traced }
 
