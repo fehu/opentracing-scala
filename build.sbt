@@ -19,7 +19,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     skip in publish := true
   )
-  .aggregate(scala, akka, fs2, monix, propagation)
+  .aggregate(scala, akka, fs2, monix)
 
 lazy val scala = (project in file("scala"))
   .settings(
@@ -60,11 +60,6 @@ lazy val monix = (project in file("monix"))
   )
   .dependsOn(scala % "compile->compile;test->test")
 
-lazy val propagation = (project in file("propagation"))
-  .settings(
-    name := "opentracing-propagation"
-  )
-  .dependsOn(scala % "compile->compile;test->test")
 
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,
