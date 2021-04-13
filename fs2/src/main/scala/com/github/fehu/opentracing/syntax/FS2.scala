@@ -1,4 +1,4 @@
-package com.github.fehu.opentracing
+package com.github.fehu.opentracing.syntax
 
 import _root_.fs2.Stream
 import cats.~>
@@ -7,9 +7,10 @@ import cats.syntax.apply._
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
 
+import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.Traced.ActiveSpan
 
-package object fs2 {
+object FS2 {
 
   final implicit class TracedFs2StreamOps[F[_]: Bracket[*[_], Throwable], A](stream: Stream[F, A])(implicit t: Traced[F]) {
     def traceLifetime(operation: String, tags: Traced.Tag*): Stream[F, A] =
