@@ -2,8 +2,9 @@ package com.github.fehu.opentracing
 
 import scala.language.{ existentials, implicitConversions }
 
-import cats.~>
+import cats.{ Show, ~> }
 import cats.effect.Resource
+import cats.syntax.show._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
@@ -102,6 +103,8 @@ object Traced {
     implicit lazy val longIsTaggable: Taggable[Long]     = numberIsTaggable.contramap(Long.box)
     implicit lazy val doubleIsTaggable: Taggable[Double] = numberIsTaggable.contramap(Double.box)
     implicit lazy val floatIsTaggable: Taggable[Float]   = numberIsTaggable.contramap(Float.box)
+
+    implicit def shownIsTaggable[A: Show]: Taggable[A] = stringIsTaggable.contramap(_.show)
   }
 
   trait SpanInterface[F[_]] {
