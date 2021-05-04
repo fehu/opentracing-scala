@@ -27,6 +27,8 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
 
   def context: F[Option[SpanContext]] = delay(_.context())
 
+  def setOperation(op: String): F[Unit] = delay(_.setOperationName(op)).void
+
   def setTag(tag: Traced.Tag): F[Unit] = delay(tag.apply(_)).void
   def setTags(tags: Traced.Tag*): F[Unit] =
     if (tags.nonEmpty) delay(tags.foldLeft(_)((s, t) => t.apply(s))).void
@@ -42,6 +44,7 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
 
   def mapK[G[_]](f: F ~> G): Traced.SpanInterface[G] = new Traced.SpanInterface[G] {
     def context: G[Option[SpanContext]] = f(self.context)
+    def setOperation(op: String): G[Unit] = f(self.setOperation(op))
     def setTag(tag: Traced.Tag): G[Unit] = f(self.setTag(tag))
     def setTags(tags: Traced.Tag*): G[Unit] = f(self.setTags(tags: _*))
     def log(fields: (String, Any)*): G[Unit] = f(self.log(fields: _*))

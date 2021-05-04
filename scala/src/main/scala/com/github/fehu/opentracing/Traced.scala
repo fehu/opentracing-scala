@@ -110,6 +110,8 @@ object Traced {
   trait SpanInterface[F[_]] {
     def context: F[Option[SpanContext]]
 
+    def setOperation(op: String): F[Unit]
+
     def setTag(tag: Traced.Tag): F[Unit]
     def setTags(tags: Traced.Tag*): F[Unit]
 
