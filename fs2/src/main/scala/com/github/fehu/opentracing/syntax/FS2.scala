@@ -2,9 +2,8 @@ package com.github.fehu.opentracing.syntax
 
 import _root_.fs2.Stream
 import cats.~>
-import cats.effect.{ Bracket, Resource }
+import cats.effect.Bracket
 import cats.syntax.apply._
-import cats.syntax.option._
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
 
@@ -24,27 +23,48 @@ object FS2 {
                               (operation: String, tags: Traced.Tag*): Stream[F, A] =
       tracingLifetime(t.injectContext(ctx), operation, tags)
 
-    def traceLifetimeInjectingOpt(ctx: Option[SpanContext], traceEmpty: Boolean = true)
-                                 (operation: String, tags: Traced.Tag*): Stream[F, A] =
-      tracingLifetimeOpt(ctx.map(t.injectContext), operation, tags, traceEmpty)
+    def traceLifetimeInjectingOpt(
+      ctx: Option[SpanContext],
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    )(
+      operation: String,
+      tags: Traced.Tag*
+    ): Stream[F, A] =
+      tracingLifetimeOpt(ctx.map(t.injectContext), operation, tags, traceEmpty, emptyOrphan)
 
     def traceLifetimeInjectingFrom[C](format: Format[C])(carrier: C)
                                      (operation: String, tags: Traced.Tag*): Stream[F, A] =
       tracingLifetime(t.injectContextFrom(format)(carrier), operation, tags)
 
-    def traceLifetimeInjectingFromOpt[C](format: Format[C])(carrier: Option[C], traceEmpty: Boolean = true)
-                                        (operation: String, tags: Traced.Tag*): Stream[F, A] =
-      tracingLifetimeOpt(carrier.map(t.injectContextFrom(format)), operation, tags, traceEmpty)
+    def traceLifetimeInjectingFromOpt[C](
+      format: Format[C]
+    )(
+      carrier: Option[C],
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    )(
+      operation: String,
+      tags: Traced.Tag*
+    ): Stream[F, A] =
+      tracingLifetimeOpt(carrier.map(t.injectContextFrom(format)), operation, tags, traceEmpty, emptyOrphan)
 
     def traceLifetimeInjectingPropagated[C <: Propagation](carrier: C)
                                                           (operation: String, tags: Traced.Tag*)
                                                           (implicit companion: PropagationCompanion[C]): Stream[F, A] =
       traceLifetimeInjectingFrom(companion.format)(carrier.underlying)(operation, tags: _*)
 
-    def traceLifetimeInjectingPropagatedOpt[C <: Propagation](carrier: Option[C], traceEmpty: Boolean = true)
-                                                             (operation: String, tags: Traced.Tag*)
-                                                             (implicit companion: PropagationCompanion[C]): Stream[F, A] =
-      traceLifetimeInjectingFromOpt(companion.format)(carrier.map(_.underlying), traceEmpty)(operation, tags: _*)
+    def traceLifetimeInjectingPropagatedOpt[C <: Propagation](
+      carrier: Option[C],
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    )(
+      operation: String,
+      tags: Traced.Tag*
+    )(implicit
+      companion: PropagationCompanion[C]
+    ): Stream[F, A] =
+      traceLifetimeInjectingFromOpt(companion.format)(carrier.map(_.underlying), traceEmpty, emptyOrphan)(operation, tags: _*)
 
     // // // Trace Elements Usage // // //
 
@@ -57,22 +77,38 @@ object FS2 {
     def traceUsageInjecting(context: A => SpanContext, trace: A => Traced.Operation.Builder): Stream[F, A] =
       tracingElems(a => t.injectContext(context(a)), trace)
 
-    def traceUsageInjectingOpt(context: A => Option[SpanContext], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true): Stream[F, A] =
-      tracingElemsOpt(context(_).map(t.injectContext), trace, traceEmpty)
+    def traceUsageInjectingOpt(
+      context: A => Option[SpanContext],
+      trace: A => Traced.Operation.Builder,
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    ): Stream[F, A] =
+      tracingElemsOpt(context(_).map(t.injectContext), trace, traceEmpty, emptyOrphan)
 
     def traceUsageInjectingFrom[C](format: Format[C])(carrier: A => C, trace: A => Traced.Operation.Builder): Stream[F, A] =
       tracingElems(a => t.injectContextFrom(format)(carrier(a)), trace)
 
-    def traceUsageInjectingFromOpt[C](format: Format[C])(carrier: A => Option[C], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true): Stream[F, A] =
-      tracingElemsOpt(carrier(_).map(t.injectContextFrom(format)), trace, traceEmpty)
+    def traceUsageInjectingFromOpt[C](format: Format[C])(
+      carrier: A => Option[C],
+      trace: A => Traced.Operation.Builder,
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    ): Stream[F, A] =
+      tracingElemsOpt(carrier(_).map(t.injectContextFrom(format)), trace, traceEmpty, emptyOrphan)
 
     def traceUsageInjectingPropagated[C <: Propagation](carrier: A => C, trace: A => Traced.Operation.Builder)
                                                        (implicit companion: PropagationCompanion[C]): Stream[F, A] =
       traceUsageInjectingFrom(companion.format)(carrier andThen (_.underlying), trace)
 
-    def traceUsageInjectingPropagatedOpt[C <: Propagation](carrier: A => Option[C], trace: A => Traced.Operation.Builder, traceEmpty: Boolean = true)
-                                                          (implicit companion: PropagationCompanion[C]): Stream[F, A] =
-      traceUsageInjectingFromOpt(companion.format)(carrier andThen (_.map(_.underlying)), trace, traceEmpty)
+    def traceUsageInjectingPropagatedOpt[C <: Propagation](
+      carrier: A => Option[C],
+      trace: A => Traced.Operation.Builder,
+      traceEmpty: Boolean = true,
+      emptyOrphan: Boolean = true
+    )(implicit
+      companion: PropagationCompanion[C]
+    ): Stream[F, A] =
+      traceUsageInjectingFromOpt(companion.format)(carrier andThen (_.map(_.underlying)), trace, traceEmpty, emptyOrphan)
 
     // // // Log Elements // // //
 
@@ -90,15 +126,22 @@ object FS2 {
                    .onFinalize(finish)
       } yield a
 
-    private def tracingLifetimeOpt(i: Option[Traced.Interface[F]], op: String, tags: Seq[Traced.Tag], traceEmpty: Boolean): Stream[F, A] =
-      i.orElse(if (traceEmpty) Some(t) else None).map(tracingLifetime(_, op, tags)).getOrElse(stream)
+    private def tracingLifetimeOpt(i: Option[Traced.Interface[F]], op: String, tags: Seq[Traced.Tag], traceEmpty: Boolean, emptyOrphan: Boolean): Stream[F, A] = {
+      lazy val iw =
+        if (traceEmpty) Some(if (emptyOrphan) t.withoutParent else t)
+        else None
+      i.orElse(iw).map(tracingLifetime(_, op, tags)).getOrElse(stream)
+    }
 
     private def tracingElems(f: A => Traced.Interface[F], trace: A => Traced.Operation.Builder): Stream[F, A] =
       stream.flatMap(a => Stream.resource(f(a).spanResource(trace(a))).as(a))
 
-    private def tracingElemsOpt(f: A => Option[Traced.Interface[F]], trace: A => Traced.Operation.Builder, traceEmpty: Boolean): Stream[F, A] =
+    private def tracingElemsOpt(f: A => Option[Traced.Interface[F]], trace: A => Traced.Operation.Builder, traceEmpty: Boolean, emptyOrphan: Boolean): Stream[F, A] =
       stream.flatMap { a =>
-        f(a).orElse(if (traceEmpty) Some(t) else None).fold(
+        lazy val iw =
+          if (traceEmpty) Some(if (emptyOrphan) t.withoutParent else t)
+          else None
+        f(a).orElse(iw).fold(
           Stream.emit(a).covary[F]
         )(
           i => Stream.resource(i.spanResource(trace(a))).as(a)
