@@ -11,12 +11,16 @@ import cats.syntax.functor._
 import org.scalatest.Ignore
 
 import com.github.fehu.opentracing.syntax._
+import com.github.fehu.opentracing.util.ErrorLogger
 
 @Ignore
 abstract class TraceSpec[F[_]: Traced] extends AnyFreeSpec with Spec {
   implicit val effect: Effect[F]
   implicit val cs: ContextShift[F]
   implicit val timer: Timer[F]
+
+  implicit lazy val tracedRunParams: Traced.RunParams =
+    Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty, ErrorLogger.stdout)
 
   "Trace nested defer / delay" in {
     Effect[F].defer {

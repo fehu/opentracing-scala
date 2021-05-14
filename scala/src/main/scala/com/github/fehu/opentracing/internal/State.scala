@@ -11,11 +11,13 @@ import cats.syntax.traverse._
 import io.opentracing.{ Span, SpanContext, Tracer }
 
 import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.util.ErrorLogger
 
 private[opentracing] case class State(
   private[opentracing] val tracer: Tracer,
   private[opentracing] val hooks: Traced.Hooks,
-  private[opentracing] val currentSpan: Option[Span]
+  private[opentracing] val currentSpan: Option[Span],
+  private[opentracing] val logError: ErrorLogger
 )
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])

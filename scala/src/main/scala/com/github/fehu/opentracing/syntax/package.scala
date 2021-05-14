@@ -11,6 +11,7 @@ import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.internal.syntax.LowPrioritySyntax
 import com.github.fehu.opentracing.propagation.{ Propagation, PropagationCompanion }
+import com.github.fehu.opentracing.util.ErrorLogger
 
 package object syntax extends LowPrioritySyntax {
 
@@ -94,16 +95,15 @@ package object syntax extends LowPrioritySyntax {
   final implicit class TracedObjOps(obj: Traced.type) extends TracedFunctions
 
   final implicit class Traced2Ops[F[_[*], *], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
-    def runTraced(params: Traced.RunParams): G[A] = traced.run(fa, params)
+    def runTracedP(params: Traced.RunParams): G[A] = traced.run(fa, params)
 
-    def runTraced(tracer: Tracer, hooks: Traced.Hooks, parent: Traced.ActiveSpan): G[A] =
-      runTraced(Traced.RunParams(tracer, hooks, parent))
-    def runTraced(tracer: Tracer, hooks: Traced.Hooks): G[A] =
-      runTraced(Traced.RunParams(tracer, hooks, Traced.ActiveSpan.empty))
-    def runTraced(tracer: Tracer, parent: Traced.ActiveSpan): G[A] =
-      runTraced(Traced.RunParams(tracer, Traced.Hooks(), parent))
-    def runTraced(tracer: Tracer): G[A] =
-      runTraced(Traced.RunParams(tracer, Traced.Hooks(), Traced.ActiveSpan.empty))
+    def runTraced(
+      tracer: Tracer,
+      hooks: Traced.Hooks = Traced.Hooks(),
+      parent: Traced.ActiveSpan = Traced.ActiveSpan.empty,
+      logError: ErrorLogger = ErrorLogger.stdout
+    ): G[A] =
+      runTracedP(Traced.RunParams(tracer, hooks, parent, logError))
   }
 
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])

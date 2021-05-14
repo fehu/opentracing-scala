@@ -8,6 +8,7 @@ import cats.syntax.show._
 import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
+import com.github.fehu.opentracing.util.ErrorLogger
 import com.github.fehu.opentracing.util.FunctionK2.~~>
 
 trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
@@ -171,13 +172,13 @@ object Traced {
   }
   object SpanInterfaceK2 extends SpanInterfaceK2
 
-  final case class RunParams(tracer: Tracer, hooks: Hooks, activeSpan: ActiveSpan)
+  final case class RunParams(tracer: Tracer, hooks: Hooks, activeSpan: ActiveSpan, logError: ErrorLogger)
 
   object RunParams {
-    def apply(tracer: Tracer, hooks: Hooks): Partial = Partial(tracer, hooks)
+    def apply(tracer: Tracer, hooks: Hooks, logError: ErrorLogger): Partial = Partial(tracer, hooks, logError)
 
-    final case class Partial(tracer: Tracer, hooks: Hooks) {
-      def apply(active: ActiveSpan): RunParams = RunParams(tracer, hooks, active)
+    final case class Partial(tracer: Tracer, hooks: Hooks, logError: ErrorLogger) {
+      def apply(active: ActiveSpan): RunParams = RunParams(tracer, hooks, active, logError)
     }
     implicit def fromPartial(p: Partial)(implicit active: ActiveSpan): RunParams = p(active)
   }

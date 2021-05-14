@@ -142,9 +142,10 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: 
   def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[TracedT[F, *]] =
     new InterfaceProxy(
       for {
-        s <- state
-        c <- StateT liftF delay{ s.tracer.extract(format, carrier) }
-      } yield Some(Right(c))
+        s  <- state
+        ce <- StateT liftF delay{ s.tracer.extract(format, carrier) }.attempt
+        _  <- StateT.liftF(ce.swap.traverse_(s.logError[F]("Failed to extract span context from carrier", _)))
+      } yield ce.toOption.map(_.asRight)
     )
 
   private class InterfaceProxy(parent: TracedT[F, Option[Either[Span, SpanContext]]]) extends TracedInterface[F] {
@@ -171,10 +172,10 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: 
 
 
   def currentRunParams: TracedT[F, Traced.RunParams] =
-    state.map(s => Traced.RunParams(s.tracer, s.hooks, ActiveSpan(s.currentSpan)))
+    state.map(s => Traced.RunParams(s.tracer, s.hooks, ActiveSpan(s.currentSpan), s.logError))
 
   def run[A](traced: TracedT[F, A], params: Traced.RunParams): F[A] =
-    traced.run(State(params.tracer, params.hooks, params.activeSpan.maybe)).map(_._2)
+    traced.run(State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)).map(_._2)
 
   def mapK[G[_]](f: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.mapK(f))
 
@@ -327,7 +328,7 @@ private[opentracing] trait TracedTEffect[F[_]] extends Effect[TracedT[F, *]] {
   protected val params: Traced.RunParams
 
   protected[this] def runP[A](traced: TracedT[F, A]) =
-    traced.run(State(params.tracer, params.hooks, params.activeSpan.maybe)).map(_._2)
+    traced.run(State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)).map(_._2)
 
   def runAsync[A](fa: TracedT[F, A])(cb: Either[Throwable, A] => IO[Unit]): SyncIO[Unit] =
     EF.runAsync[A](runP(fa))(cb)

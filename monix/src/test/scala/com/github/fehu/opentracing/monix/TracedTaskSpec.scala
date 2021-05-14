@@ -5,12 +5,9 @@ import _root_.monix.eval.Task
 
 import com.github.fehu.opentracing.transformer._
 import com.github.fehu.opentracing.transformer.Monix.TracedTask
-import com.github.fehu.opentracing.{ TraceSpec, Traced }
+import com.github.fehu.opentracing.TraceSpec
 
 class TracedTaskSpec extends TraceSpec[TracedTask] {
-  implicit lazy val tracedRunParams: Traced.RunParams =
-    Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty)
-
   import _root_.monix.execution.Scheduler.Implicits.global
   implicit val effect: Effect[TracedTask] = tracedTEffectInstance[Task]
 

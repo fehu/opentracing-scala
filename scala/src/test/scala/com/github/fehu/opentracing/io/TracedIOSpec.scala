@@ -5,11 +5,9 @@ import scala.concurrent.ExecutionContext
 import cats.effect.{ ContextShift, Effect, IO, Timer }
 
 import com.github.fehu.opentracing.transformer._
-import com.github.fehu.opentracing.{ TraceSpec, Traced }
+import com.github.fehu.opentracing.TraceSpec
 
 class TracedIOSpec extends TraceSpec[TracedIO] {
-  implicit lazy val tracedRunParams: Traced.RunParams =
-    Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty)
   implicit lazy val effect: Effect[TracedIO] = tracedTEffectInstance
 
   implicit lazy val csIO: ContextShift[IO] = IO.contextShift(ExecutionContext.global)

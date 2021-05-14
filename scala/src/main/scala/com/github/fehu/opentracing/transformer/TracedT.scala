@@ -17,7 +17,7 @@ object TracedT {
     λ[TracedT[F, *] ~> F](_.run(toState(params)).map(_._2))
 
   private[opentracing] def toState[F[_]: Functor](params: Traced.RunParams) =
-    State(params.tracer, params.hooks, params.activeSpan.maybe)
+    State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)
 }
 
 object TracedIO {
