@@ -46,6 +46,10 @@ object Traced {
 
     final def apply[A](builder: Operation.Builder)(fa: F[A]): F[A] = apply(builder(Operation))(fa)
     final def spanResource[A](builder: Operation.Builder): Resource[F, ActiveSpan] = spanResource(builder(Operation))
+
+    def withParent(span: ActiveSpan): Interface[F]
+    def withParent(span: SpanContext): Interface[F]
+    def withoutParent: Interface[F]
   }
 
   final case class Operation(operation: String, tags: Seq[Traced.Tag])

@@ -21,6 +21,9 @@ protected[opentracing] class TracedStub[F[_]](implicit A: Applicative[F], D: Def
 protected[opentracing] class TracedInterfaceStub[F[_]](implicit A: Applicative[F]) extends Traced.Interface[F] {
   def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A] = fa
   def spanResource(op: String, tags: Traced.Tag*): Resource[F, Traced.ActiveSpan] = Resource.pure(Traced.ActiveSpan.empty)
+  def withParent(span: Traced.ActiveSpan): Traced.Interface[F] = this
+  def withParent(span: SpanContext): Traced.Interface[F] = this
+  def withoutParent: Traced.Interface[F] = this
 }
 
 protected[opentracing] class SpanInterfaceStub[F[_]](unit: F[Unit], pure: cats.Id ~> F) extends Traced.SpanInterface[F] {

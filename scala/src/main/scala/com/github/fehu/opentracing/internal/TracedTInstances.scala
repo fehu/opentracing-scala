@@ -137,18 +137,30 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: 
 
   protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = state.map(_.currentSpan.map(Left(_)))
 
-  def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = new InjectInterface(StateT.pure(context))
+  def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = InterfaceProxy.pure(Some(Right(context)))
 
   def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[TracedT[F, *]] =
-    new InjectInterface(
+    new InterfaceProxy(
       for {
         s <- state
         c <- StateT liftF delay{ s.tracer.extract(format, carrier) }
-      } yield c
+      } yield Some(Right(c))
     )
 
-  private class InjectInterface(context: TracedT[F, SpanContext]) extends TracedInterface[F] {
-    protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = context.map(c => Option(c).map(Right(_)))
+  private class InterfaceProxy(parent: TracedT[F, Option[Either[Span, SpanContext]]]) extends TracedInterface[F] {
+    protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = parent
+
+    def withParent(span: ActiveSpan): Traced.Interface[TracedT[F, *]] =
+      InterfaceProxy.pure(Option(span).flatMap(_.maybe).map(_.asLeft))
+
+    def withParent(span: SpanContext): Traced.Interface[TracedT[F, *]] =
+      InterfaceProxy.pure(Option(span).map(_.asRight))
+
+    def withoutParent: Traced.Interface[TracedT[F, *]] =
+      InterfaceProxy.pure(None)
+  }
+  private object InterfaceProxy {
+    def pure(opt: Option[Either[Span, SpanContext]]): InterfaceProxy = new InterfaceProxy(self.pure(opt))
   }
 
   def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
@@ -165,6 +177,13 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: 
     traced.run(State(params.tracer, params.hooks, params.activeSpan.maybe)).map(_._2)
 
   def mapK[G[_]](f: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.mapK(f))
+
+  def withParent(span: ActiveSpan): Traced.Interface[TracedT[F, *]] = withParent0(Option(span).flatMap(_.maybe).map(_.asLeft))
+  def withParent(span: SpanContext): Traced.Interface[TracedT[F, *]] = withParent0(Option(span).map(_.asRight))
+  def withoutParent: Traced.Interface[TracedT[F, *]] = withParent0(None)
+
+  private def withParent0(span: Option[Either[Span, SpanContext]]): Traced.Interface[TracedT[F, *]] =
+    new InterfaceProxy(pure(span))
 }
 
 object TracedTTracedInstance {
