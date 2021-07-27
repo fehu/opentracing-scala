@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing.internal
 
-import cats.{ Applicative, CommutativeApplicative, Defer, Monad, MonadError, Parallel, ~> }
+import cats.{ Applicative, CommutativeApplicative, Monad, MonadError, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
 import cats.effect._
 import cats.instances.list._
@@ -62,7 +62,7 @@ private[opentracing] trait TracedTTracedInstances
      with TracedTTracedLowPriorityInstances2
      with TracedTTracedLowPriorityInstances3
 {
-  implicit def tracedTTracedInstance[F[_]: Defer: MonadError[*[_], Throwable]]: Traced2[TracedT, F] =
+  implicit def tracedTTracedInstance[F[_]: Sync]: Traced2[TracedT, F] =
     new TracedTTracedInstance
 
   implicit def tracedTParallelInstance[F[_]](implicit par: Parallel[F]): Parallel.Aux[TracedT[F, *], TracedTParallelInstance.Par[par.F, *]] =
@@ -108,13 +108,13 @@ private[opentracing] trait TracedTTracedLowPriorityInstances3 {
   implicit def tracedTLiftIoInstance[F[_]: Applicative: LiftIO]: LiftIO[TracedT[F, *]] = new TracedTLiftIoInstance
 }
 
-private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: MonadError[F, Throwable])
+private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
   extends TracedTTracedInstance.TracedInterface[F] with Traced2[TracedT, F] { self =>
 
+  import sync.delay
   import TracedTTracedInstance._
 
   private def state = StateT.get[F, State]
-  private def delay = Tools.delay[F]
 
   def pure[A](a: A): TracedT[F, A] = StateT.pure(a)
 
@@ -188,13 +188,13 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit D: Defer[F], M: 
 }
 
 object TracedTTracedInstance {
-  abstract class TracedInterface[F[_]: Defer: MonadError[*[_], Throwable]] extends Traced.Interface[TracedT[F, *]] {
+  abstract class TracedInterface[F[_]](implicit sync: Sync[F]) extends Traced.Interface[TracedT[F, *]] {
     protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]]
+
+    import sync.delay
 
     private def state = StateT.get[F, State]
     private def setState = StateT.set[F, State] _
-
-    private def delay = Tools.delay[F]
 
     def apply[A](op: String, tags: Traced.Tag*)(fa: TracedT[F, A]): TracedT[F, A] =
       for {
@@ -266,7 +266,6 @@ private[opentracing] class TracedTSyncInstance[F[_]](implicit sync: Sync[F])
   extends Sync[TracedT[F, *]] with TracedTMonadErrorProxy[F, Throwable]
 {
   protected val MF: MonadError[F, Throwable] = sync
-  protected val DF: Defer[F] = sync
 
   def suspend[A](thunk: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(sync.delay(thunk)).flatMap(locally)
 
