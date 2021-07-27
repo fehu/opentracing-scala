@@ -1,7 +1,7 @@
 // scalac plugin has its own version
 
-val scala212 = "2.12.13"
-val scala213 = "2.13.5"
+val scala212 = "2.12.14"
+val scala213 = "2.13.6"
 
 ThisBuild / crossScalaVersions := List(scala212, scala213)
 ThisBuild / scalaVersion       := scala213
@@ -20,7 +20,7 @@ lazy val root = (project in file("."))
     name := "opentracing",
     skip in publish := true
   )
-  .aggregate(scala, akka, fs2, monix)
+  .aggregate(scala, akka, fs2)
 
 lazy val scala = (project in file("scala"))
   .settings(
@@ -53,14 +53,6 @@ lazy val fs2 = (project in file("fs2"))
     libraryDependencies += Dependencies.`fs2-core`
   )
   .dependsOn(scala)
-
-lazy val monix = (project in file("monix"))
-  .settings(
-    name := "opentracing-monix",
-    libraryDependencies += Dependencies.monix
-  )
-  .dependsOn(scala % "compile->compile;test->test")
-
 
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,

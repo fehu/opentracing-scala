@@ -12,7 +12,6 @@ object Dependencies {
   lazy val `cats-core`        = "org.typelevel"  %% "cats-core"        % Version.cats
   lazy val `cats-effect`      = "org.typelevel"  %% "cats-effect"      % Version.catsEffect
   lazy val `fs2-core`         = "co.fs2"         %% "fs2-core"         % Version.fs2
-  lazy val monix              = "io.monix"       %% "monix"            % Version.monix
 
   lazy val `kind-projector`   = "org.typelevel"  %% "kind-projector"     % Version.kindProjector cross CrossVersion.full
   lazy val `monadic-for`      = "com.olegpy"     %% "better-monadic-for" % Version.monadicFor
@@ -25,16 +24,15 @@ object Dependencies {
     lazy val opentracing    = "0.33.0"
     lazy val jaegerClient   = "1.5.0"
 
-    lazy val cats           = "2.4.2"
-    lazy val catsEffect     = "2.4.0"
-    lazy val fs2            = "2.5.3"
-    lazy val monix          = "3.2.2"
+    lazy val cats           = "2.6.1"
+    lazy val catsEffect     = "2.5.1"
+    lazy val fs2            = "2.5.9"
 
-    lazy val kindProjector  = "0.11.3"
+    lazy val kindProjector  = "0.13.0"
     lazy val monadicFor     = "0.3.1"
 
-    lazy val akka           = "2.6.13"
+    lazy val akka           = "2.6.15"
 
-    lazy val scalatest      = "3.2.6"
+    lazy val scalatest      = "3.2.9"
   }
 }
