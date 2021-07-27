@@ -197,12 +197,13 @@ object TracedTTracedInstance {
     private def setState = StateT.set[F, State] _
 
     def apply[A](op: String, tags: Traced.Tag*)(fa: TracedT[F, A]): TracedT[F, A] =
-      for {
-        s    <- state
-        p    <- spanParent
-        span <- StateT liftF Tools.newSpan(s.tracer, p, s.hooks.beforeStart, op, tags)
-        a    <- execWithSpan(s, span, fa)
-      } yield a
+      spanResource(op, tags: _*).use { activeSpan =>
+        for {
+          s <- state
+          _ <- setState(s.copy(currentSpan = activeSpan.maybe))
+          a <- fa
+        } yield a
+      }
 
     def spanResource(op: String, tags: Traced.Tag*): Resource[TracedT[F, *], ActiveSpan] =
       Resource.makeCase(
@@ -219,17 +220,6 @@ object TracedTTracedInstance {
         case (span, ExitCase.Canceled)  => finSpan(span, Some(new Exception("Canceled")))
         case (span, ExitCase.Error(e))  => finSpan(span, Some(e))
       }
-
-    private def execWithSpan[A](state: State, span: Span, fa: TracedT[F, A]) = {
-      val span1 = CurrentSpan(span)
-      for {
-        _ <- StateT liftF state.hooks.justAfterStart(span1).traverse_(_(span1))
-        _ <- setState(state.copy(currentSpan = Some(span)))
-        fin = (e: Option[Throwable]) => state.hooks.beforeStop(span1)(e).traverse_(_(span1))
-                                             .guarantee0(_ => delay{ span.finish() })
-        a <- fa.transformF(_.guarantee0(e => fin(e.left.toOption)))
-      } yield a
-    }
 
     private def finSpan(span: ActiveSpan, e: Option[Throwable]): TracedT[F, Unit] =
       for {
