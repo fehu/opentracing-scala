@@ -8,24 +8,37 @@ import cats.syntax.functor._
 import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.Traced
-import com.github.fehu.opentracing.internal.{ State, TracedTTracedInstance }
+import com.github.fehu.opentracing.internal.{ State, TracedTTracedInstance, TracedTTracedInstances }
 
-object TracedT {
-  def liftK[F[_]: Applicative]: F ~> TracedT[F, *] = StateT.liftK
+final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal
+
+object TracedT extends TracedTTracedInstances {
+  type Underlying[F[_], A] = StateT[F, State, A]
+
+  def liftK[F[_]: Applicative]: F ~> TracedT[F, *] = λ[F ~> TracedT[F, *]](fa => TracedT(StateT.liftF(fa)))
 
   def runK[F[_]: FlatMap](params: Traced.RunParams): TracedT[F, *] ~> F =
-    λ[TracedT[F, *] ~> F](_.run(toState(params)).map(_._2))
+    λ[TracedT[F, *] ~> F](_.stateT.run(toState(params)).map(_._2))
 
   private[opentracing] def toState[F[_]: Functor](params: Traced.RunParams) =
     State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)
+
+  private[opentracing] object AutoConvert {
+    import scala.language.implicitConversions
+
+    @inline implicit def autoToStateT[F[_], A](tt: TracedT[F, A]): Underlying[F, A] = tt.stateT
+    @inline implicit def autoFromStateT[F[_], A](st: Underlying[F, A]): TracedT[F, A] = new TracedT(st)
+  }
 }
 
 object TracedIO {
-  def pure[A](a: A): TracedIO[A] = StateT.pure(a)
+  import TracedT.AutoConvert._
+
+  def pure[A](a: A): TracedIO[A] = TracedT(StateT.pure(a))
   lazy val unit: TracedIO[Unit] = pure(())
 
-  def liftF[F[_]: Effect, A](fa: F[A]): TracedIO[A] = StateT.liftF(fa.toIO)
-  def liftIO[A](io: IO[A]): TracedIO[A] = StateT.liftF(io)
+  def liftF[F[_]: Effect, A](fa: F[A]): TracedIO[A] = TracedT(StateT.liftF(fa.toIO))
+  def liftIO[A](io: IO[A]): TracedIO[A] = TracedT(StateT.liftF(io))
 
   def raiseError[A](err: Throwable): TracedIO[A] = liftF(IO.raiseError[A](err))
 

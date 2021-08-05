@@ -10,5 +10,5 @@ import com.github.fehu.opentracing.util.ErrorLogger
 class PropagationTracedIOSpec extends PropagationSpec[TracedIO] {
   implicit lazy val tracedRunParams: Traced.RunParams =
     Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty, ErrorLogger.stdout)
-  implicit lazy val effect: Effect[TracedIO] = tracedTEffectInstance
+  implicit lazy val effect: Effect[TracedIO] = TracedT.tracedTEffectInstance
 }

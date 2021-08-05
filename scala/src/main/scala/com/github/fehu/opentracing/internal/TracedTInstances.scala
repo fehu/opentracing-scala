@@ -1,5 +1,8 @@
 package com.github.fehu.opentracing.internal
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.{ FiniteDuration, TimeUnit }
+
 import cats.{ Applicative, CommutativeApplicative, Monad, MonadError, Parallel, ~> }
 import cats.data.{ IndexedStateT, StateT }
 import cats.effect._
@@ -20,6 +23,7 @@ import io.opentracing.{ Span, SpanContext }
 import com.github.fehu.opentracing.{ Traced, Traced2 }
 import com.github.fehu.opentracing.Traced.ActiveSpan
 import com.github.fehu.opentracing.transformer.TracedT
+import com.github.fehu.opentracing.transformer.TracedT.AutoConvert._
 
 /**
  * {{{
@@ -69,10 +73,28 @@ private[opentracing] trait TracedTTracedInstances
     new TracedTParallelInstance[F, par.F]()(par)
 
   /** Alias for [[ContextShift.deriveStateT]] */
-  implicit def tracedTContextShiftInstance[F[_]: ContextShift: Monad]: ContextShift[TracedT[F, *]] = ContextShift.deriveStateT
+  implicit def tracedTContextShiftInstance[F[_]: ContextShift: Monad]: ContextShift[TracedT[F, *]] =
+    new ContextShift[TracedT[F, *]] {
+      private[this] val underlying = ContextShift.deriveStateT[F, State]
+
+      def shift: TracedT[F, Unit] = underlying.shift
+      def evalOn[A](ec: ExecutionContext)(fa: TracedT[F, A]): TracedT[F, A] = underlying.evalOn(ec)(fa.stateT)
+    }
+
 
   /** Alias for [[Timer.deriveStateT]] */
-  implicit def tracedTTimerInstance[F[_]: Applicative: Timer]: Timer[TracedT[F, *]] = Timer.deriveStateT
+  implicit def tracedTTimerInstance[F[_]: Applicative: Timer]: Timer[TracedT[F, *]] =
+    new Timer[TracedT[F, *]] {
+      private[this] val underlying = Timer.deriveStateT[F, State]
+
+      def clock: Clock[TracedT[F, *]] = new Clock[TracedT[F, *]] {
+        private[this] val underlying = Clock.deriveStateT[F, State]
+
+        def realTime(unit: TimeUnit): TracedT[F, Long] = underlying.realTime(unit)
+        def monotonic(unit: TimeUnit): TracedT[F, Long] = underlying.monotonic(unit)
+      }
+      def sleep(duration: FiniteDuration): TracedT[F, Unit] = underlying.sleep(duration)
+    }
 
   /** Requires implicit [[Traced.RunParams]] in scope.  */
   implicit def tracedTConcurrentEffectInstance[F[_]: ConcurrentEffect](implicit params: Traced.RunParams): ConcurrentEffect[TracedT[F, *]] =
@@ -116,11 +138,11 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
 
   private def state = StateT.get[F, State]
 
-  def pure[A](a: A): TracedT[F, A] = StateT.pure(a)
+  def pure[A](a: A): TracedT[F, A] = TracedT(StateT.pure(a))
 
-  def defer[A](fa: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(delay(fa)).flatMap(locally)
+  def defer[A](fa: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(delay(fa.stateT)).flatMap(locally)
 
-  def lift[A](fa: F[A]): TracedT[F, A] = StateT.liftF(fa)
+  def lift[A](fa: F[A]): TracedT[F, A] = TracedT(StateT.liftF(fa))
 
   def currentSpan: Traced.SpanInterface[TracedT[F, *]] = new CurrentSpan[TracedT[F, *]](state.map(_.currentSpan))
 
@@ -135,17 +157,19 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
        .getOrElse(forceCurrentSpan(active))
     )
 
-  protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = state.map(_.currentSpan.map(Left(_)))
+  protected def spanParent: TracedT[F, Option[Either[Span, SpanContext]]] = TracedT(state.map(_.currentSpan.map(Left(_))))
 
   def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = InterfaceProxy.pure(Some(Right(context)))
 
   def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[TracedT[F, *]] =
     new InterfaceProxy(
-      for {
-        s  <- state
-        ce <- StateT liftF delay{ s.tracer.extract(format, carrier) }.attempt
-        _  <- StateT.liftF(ce.swap.traverse_(s.logError[F]("Failed to extract span context from carrier", _)))
-      } yield ce.toOption.map(_.asRight)
+      TracedT(
+        for {
+          s  <- state
+          ce <- StateT liftF delay{ s.tracer.extract(format, carrier) }.attempt
+          _  <- StateT.liftF(ce.swap.traverse_(s.logError[F]("Failed to extract span context from carrier", _)))
+        } yield ce.toOption.map(_.asRight)
+      )
     )
 
   private class InterfaceProxy(parent: TracedT[F, Option[Either[Span, SpanContext]]]) extends TracedInterface[F] {
@@ -206,7 +230,7 @@ object TracedTTracedInstance {
       }
 
     def spanResource(op: String, tags: Traced.Tag*): Resource[TracedT[F, *], ActiveSpan] =
-      Resource.makeCase(
+      Resource.makeCase[TracedT[F, *], ActiveSpan](
         for {
           s    <- state
           p    <- spanParent
@@ -240,16 +264,22 @@ object TracedTTracedInstance {
   }
 }
 
-private[opentracing] trait TracedTMonadErrorProxy[F[_], E] extends MonadError[TracedT[F, *], E] {
-  protected val MF: MonadError[F, E]
-  private lazy val M0 = IndexedStateT.catsDataMonadErrorForIndexedStateT[F, State, E](MF)
+private[opentracing] trait TracedTMonadProxy[F[_]] extends Monad[TracedT[F, *]] {
+  protected val MF: Monad[F]
+  private lazy val M0 = IndexedStateT.catsDataMonadForIndexedStateT[F, State](MF)
 
   override def map[A, B](fa: TracedT[F, A])(f: A => B): TracedT[F, B] = M0.map(fa)(f)
   def pure[A](x: A): TracedT[F, A] = M0.pure(x)
-  def flatMap[A, B](fa: TracedT[F, A])(f: A => TracedT[F, B]): TracedT[F, B] = M0.flatMap(fa)(f)
-  def tailRecM[A, B](a: A)(f: A => TracedT[F, Either[A, B]]): TracedT[F, B] = M0.tailRecM(a)(f)
-  def raiseError[A](e: E): TracedT[F, A] = M0.raiseError(e)
-  def handleErrorWith[A](fa: TracedT[F, A])(f: E => TracedT[F, A]): TracedT[F, A] = M0.handleErrorWith(fa)(f)
+  def flatMap[A, B](fa: TracedT[F, A])(f: A => TracedT[F, B]): TracedT[F, B] = M0.flatMap(fa)(f.andThen(_.stateT))
+  def tailRecM[A, B](a: A)(f: A => TracedT[F, Either[A, B]]): TracedT[F, B] = M0.tailRecM(a)(f.andThen(_.stateT))
+}
+
+private[opentracing] trait TracedTMonadErrorProxy[F[_], E] extends MonadError[TracedT[F, *], E] with TracedTMonadProxy[F] {
+  protected val MF: MonadError[F, E]
+  private lazy val M0 = IndexedStateT.catsDataMonadErrorForIndexedStateT[F, State, E](MF)
+
+  def raiseError[A](e: E): TracedT[F, A] = TracedT(M0.raiseError(e))
+  def handleErrorWith[A](fa: TracedT[F, A])(f: E => TracedT[F, A]): TracedT[F, A] = M0.handleErrorWith(fa)(f.andThen(_.stateT))
 }
 
 private[opentracing] class TracedTSyncInstance[F[_]](implicit sync: Sync[F])
@@ -257,7 +287,7 @@ private[opentracing] class TracedTSyncInstance[F[_]](implicit sync: Sync[F])
 {
   protected val MF: MonadError[F, Throwable] = sync
 
-  def suspend[A](thunk: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(sync.delay(thunk)).flatMap(locally)
+  def suspend[A](thunk: => TracedT[F, A]): TracedT[F, A] = StateT.liftF(sync.delay(thunk.stateT)).flatMap(locally)
 
   def bracketCase[A, B](acquire: TracedT[F, A])
                        (use: A => TracedT[F, B])
@@ -339,15 +369,15 @@ private[opentracing] class TracedTConcurrentInstance[F[_]](implicit C: Concurren
     for {
       s0 <- state
       f  <- StateT liftF C.start(run(s0)(fa))
-    } yield f.mapK(StateT.liftK[F, State] andThen λ[TracedT[F, *] ~> TracedT[F, *]](_ <* setState(s0)))
+    } yield f.mapK(TracedT.liftK[F] andThen λ[TracedT[F, *] ~> TracedT[F, *]](_.stateT <* setState(s0)))
   // TODO
 
   def racePair[A, B](fa: TracedT[F, A], fb: TracedT[F, B]): TracedT[F, Either[(A, Fiber[TracedT[F, *], B]), (Fiber[TracedT[F, *], A], B)]] =
     for {
       s0 <- state
       ef <- StateT liftF C.racePair(run(s0)(fa), run(s0)(fb))
-    } yield ef.leftMap{ case (a, f) => a -> f.mapK(StateT.liftK[F, State]) }
-                 .map { case (f, b) => f.mapK(StateT.liftK[F, State]) -> b }
+    } yield ef.leftMap{ case (a, f) => a -> f.mapK(TracedT.liftK[F]) }
+              .map { case (f, b) => f.mapK(TracedT.liftK[F]) -> b }
 }
 
 class TracedTConcurrentEffectInstance[F[_]](
@@ -369,7 +399,7 @@ class TracedTParallelInstance[G[_], ParF[_]](implicit val par0: Parallel.Aux[G, 
   type F[A] = Par[ParF, A]
 
   def applicative: Applicative[Par[ParF, *]] = Par.parCommutativeApplicative0(par0.applicative)
-  def monad: Monad[TracedT[G, *]] = IndexedStateT.catsDataMonadForIndexedStateT[G, State](par0.monad)
+  def monad: Monad[TracedT[G, *]] = new TracedTMonadProxy[G] { protected val MF: Monad[G] = par0.monad }
 
   def sequential: Par[ParF, *] ~> TracedT[G, *] =
     λ[Par[ParF, *] ~> TracedT[G, *]](_.traced.mapK(par0.sequential)(par0.applicative))
@@ -378,7 +408,7 @@ class TracedTParallelInstance[G[_], ParF[_]](implicit val par0: Parallel.Aux[G, 
 }
 
 object TracedTParallelInstance {
-  class Par[F[_], A](val traced: TracedT[F, A]) extends AnyVal
+  class Par[F[_], A](val traced: TracedT.Underlying[F, A]) extends AnyVal
 
   object Par {
     implicit def parCommutativeApplicative[F[_]: CommutativeApplicative]: CommutativeApplicative[Par[F, *]] =
