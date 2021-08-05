@@ -11,7 +11,7 @@ ThisBuild / organization       := "com.github.fehu"
 inThisBuild(Seq(
   addCompilerPlugin(Dependencies.`kind-projector`),
   addCompilerPlugin(Dependencies.`monadic-for`),
-  Compile / scalacOptions ++= Seq("-feature", "-deprecation"),
+  Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:higherKinds"),
   Test / parallelExecution := false
 ))
 
