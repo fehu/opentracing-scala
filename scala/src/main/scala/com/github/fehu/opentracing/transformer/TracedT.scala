@@ -6,7 +6,9 @@ import cats.effect.{ Effect, IO, LiftIO }
 
 import com.github.fehu.opentracing.internal.{ State, TracedTFunctions, TracedTFunctionsForSync, TracedTInstances }
 
-final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal
+final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal {
+  def transform[G[_], B](f: StateT[F, State, A] => StateT[G, State, B]): TracedT[G, B] = copy(f(stateT))
+}
 
 object TracedT extends TracedTInstances with TracedTFunctions {
   type Underlying[F[_], A] = StateT[F, State, A]

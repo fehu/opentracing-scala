@@ -14,7 +14,7 @@ import io.opentracing.{ Span, SpanContext, Tracer }
 import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.util.ErrorLogger
 
-private[opentracing] case class State(
+final case class State(
   private[opentracing] val tracer: Tracer,
   private[opentracing] val hooks: Traced.Hooks,
   private[opentracing] val currentSpan: Option[Span],
