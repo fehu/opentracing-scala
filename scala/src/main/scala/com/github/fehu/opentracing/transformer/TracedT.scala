@@ -4,11 +4,11 @@ import cats.~>
 import cats.data.StateT
 import cats.effect.{ Effect, IO, LiftIO }
 
-import com.github.fehu.opentracing.internal.{ State, TracedTFunctions, TracedTFunctionsForSync, TracedTTracedInstances }
+import com.github.fehu.opentracing.internal.{ State, TracedTFunctions, TracedTFunctionsForSync, TracedTInstances }
 
 final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal
 
-object TracedT extends TracedTTracedInstances with TracedTFunctions {
+object TracedT extends TracedTInstances with TracedTFunctions {
   type Underlying[F[_], A] = StateT[F, State, A]
 
   private[opentracing] object AutoConvert {

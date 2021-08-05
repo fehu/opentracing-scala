@@ -59,13 +59,22 @@ import com.github.fehu.opentracing.transformer.TracedT.AutoConvert._
  *  +--------+       +--------+
  *  |  Sync  |       | LiftIO |
  *  +--------+       +--------+
+ *      ▲
+ *  === | =========================================
+ *      |                               = Lower 4 =
+ *  +--------------+                    ===========
+ *  |  MonadError  |
+ *  +--------------+
+ *         ▲
+ *  ====== | ======================================
+ *         |                            = Lower 5 =
+ *     +---------+                      ===========
+ *     |  Monad  |
+ *     +---------+
  *  }}}
  */
-private[opentracing] trait TracedTTracedInstances
-  extends TracedTTracedLowPriorityInstances1
-     with TracedTTracedLowPriorityInstances2
-     with TracedTTracedLowPriorityInstances3
-{
+private[opentracing] trait TracedTInstances extends TracedTLowPriorityInstances1 {
+
   implicit def tracedTTracedInstance[F[_]: Sync]: Traced2[TracedT, F] =
     new TracedTTracedInstance
 
@@ -108,7 +117,7 @@ private[opentracing] trait TracedTTracedInstances
     tracedTConcurrentEffectInstance(ConcurrentEffect[F], partial(active))
 }
 
-private[opentracing] trait TracedTTracedLowPriorityInstances1 {
+private[opentracing] trait TracedTLowPriorityInstances1 extends TracedTLowPriorityInstances2 {
   implicit def tracedTConcurrentInstance[F[_]: Concurrent]: Concurrent[TracedT[F, *]] = new TracedTConcurrentInstance
 
   /** Requires implicit [[Traced.RunParams]] in scope.  */
@@ -121,13 +130,23 @@ private[opentracing] trait TracedTTracedLowPriorityInstances1 {
     tracedTEffectInstance(Effect[F], partial(active))
 }
 
-private[opentracing] trait TracedTTracedLowPriorityInstances2 {
+private[opentracing] trait TracedTLowPriorityInstances2 extends TracedTLowPriorityInstances3 {
   implicit def tracedTAsyncInstance[F[_]: Async]: Async[TracedT[F, *]] = new TracedTAsyncInstance
 }
 
-private[opentracing] trait TracedTTracedLowPriorityInstances3 {
+private[opentracing] trait TracedTLowPriorityInstances3 extends TracedTLowPriorityInstances4 {
   implicit def tracedTSyncInstance[F[_]: Sync]: Sync[TracedT[F, *]] = new TracedTSyncInstance
   implicit def tracedTLiftIoInstance[F[_]: Applicative: LiftIO]: LiftIO[TracedT[F, *]] = new TracedTLiftIoInstance
+}
+
+private[opentracing] trait TracedTLowPriorityInstances4 extends TracedTLowPriorityInstances5 {
+  implicit def tracedTMonadErrorInstance[F[_], E](implicit M: MonadError[F, E]): MonadError[TracedT[F, *], E] =
+    new TracedTMonadErrorProxy[F, E] { protected val MF: MonadError[F, E] = M }
+}
+
+private[opentracing] trait TracedTLowPriorityInstances5 {
+  implicit def tracedTMonadInstance[F[_]](implicit M: Monad[F]): Monad[TracedT[F, *]] =
+    new TracedTMonadProxy[F] { protected val MF: Monad[F] = M }
 }
 
 private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
