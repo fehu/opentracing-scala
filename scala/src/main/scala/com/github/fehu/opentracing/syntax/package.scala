@@ -7,10 +7,9 @@ import cats.effect.{ Resource, Sync }
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import io.opentracing.{ SpanContext, Tracer }
-import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.internal.syntax.LowPrioritySyntax
-import com.github.fehu.opentracing.propagation.{ Propagation, PropagationCompanion }
+import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.util.ErrorLogger
 
 package object syntax extends LowPrioritySyntax {
@@ -24,17 +23,17 @@ package object syntax extends LowPrioritySyntax {
     def inject(context: Option[SpanContext])(operation: String, tags: Traced.Tag*): F[A] =
       context.map(inject(_)(operation, tags: _*)).getOrElse(fa)
 
-    def injectFrom[C](format: Format[C])(carrier: C)(operation: String, tags: Traced.Tag*): F[A] =
-      traced.injectContextFrom(format)(carrier)(operation, tags: _*)(fa)
+    def injectFrom(carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*): F[A] =
+      traced.injectContextFrom(carrier)(operation, tags: _*)(fa)
 
-    def injectFromOpt[C](format: Format[C])(carrier: Option[C])(operation: String, tags: Traced.Tag*): F[A] =
-      carrier.map(injectFrom(format)(_)(operation, tags: _*)).getOrElse(fa)
+    def injectFromOpt(carrier: Option[Propagation#Carrier])(operation: String, tags: Traced.Tag*): F[A] =
+      carrier.map(injectFrom(_)(operation, tags: _*)).getOrElse(fa)
 
-    def injectPropagated[C <: Propagation](carrier: C)(operation: String, tags: Traced.Tag*): F[A] =
-      traced.injectContextFrom(carrier.format)(carrier.underlying)(operation, tags: _*)(fa)
+    def injectPropagated(carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*): F[A] =
+      traced.injectContextFrom(carrier)(operation, tags: _*)(fa)
 
-    def injectPropagatedOpt[C <: Propagation](carrier: Option[C])(operation: String, tags: Traced.Tag*): F[A] =
-      carrier.map(c => injectPropagated(c)(operation, tags: _*)).getOrElse(fa)
+    def injectPropagatedOpt(carrier: Option[Propagation#Carrier])(operation: String, tags: Traced.Tag*): F[A] =
+      carrier.map(injectPropagated(_)(operation, tags: _*)).getOrElse(fa)
   }
 
   sealed trait TracedFunctions {
@@ -65,13 +64,13 @@ package object syntax extends LowPrioritySyntax {
 
   object TracedFunctions extends TracedFunctions {
     final class Extract[F[_]] private[syntax] () {
-      def apply[C0 <: C, C](carrier: C0, format: Format[C])(implicit traced: Traced[F]): F[Option[C0]] =
-        traced.extractContext(carrier, format)
+      def apply[C <: Propagation#Carrier](carrier: C)(implicit traced: Traced[F]): F[Option[C]] =
+        traced.extractContext(carrier)
 
-      def to[C <: Propagation](implicit companion: PropagationCompanion[C], traced: Traced[F], sync: Sync[F]): F[Option[C]] =
+      def to[P <: Propagation](propagation: P)(implicit traced: Traced[F], sync: Sync[F]): F[Option[P#Carrier]] =
         for {
-          carrier <- sync.delay { companion() }
-          uOpt    <- apply(carrier.underlying, companion.format)
+          carrier <- sync.delay { propagation() }
+          uOpt    <- apply(carrier)
         } yield uOpt.as(carrier)
     }
     final class Trace[F[_]] private[syntax] (operation: String, tags: Seq[Traced.Tag]) {

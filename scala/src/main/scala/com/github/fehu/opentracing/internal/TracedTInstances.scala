@@ -19,11 +19,11 @@ import cats.syntax.foldable._
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import cats.syntax.traverse._
-import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext }
 
 import com.github.fehu.opentracing.{ Traced, Traced2 }
 import com.github.fehu.opentracing.Traced.ActiveSpan
+import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.transformer.TracedT
 import com.github.fehu.opentracing.transformer.TracedT.AutoConvert._
 
@@ -120,12 +120,14 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
 
   def injectContext(context: SpanContext): Traced.Interface[TracedT[F, *]] = InterfaceProxy.pure(Some(Right(context)))
 
-  def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[TracedT[F, *]] =
+  def injectContextFrom(carrier: Propagation#Carrier): Traced.Interface[TracedT[F, *]] =
     new InterfaceProxy(
       TracedT(
         for {
           s  <- state
-          ce <- StateT liftF delay{ s.tracer.extract(format, carrier) }.attempt
+          ce <- StateT liftF delay{
+                  s.tracer.extract(carrier.format, carrier.underlying)
+                }.attempt
           _  <- StateT.liftF(ce.swap.traverse_(s.logError[F]("Failed to extract span context from carrier", _)))
         } yield ce.toOption.map(_.asRight)
       )
@@ -147,10 +149,12 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
     def pure(opt: Option[Either[Span, SpanContext]]): InterfaceProxy = new InterfaceProxy(self.pure(opt))
   }
 
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
+  def extractContext[C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] =
     for {
       s <- state
-      o <- StateT liftF s.currentSpan.traverse(span => delay(s.tracer.inject(span.context(), format, carrier)))
+      o <- StateT liftF s.currentSpan.traverse(span => delay {
+             s.tracer.inject(span.context(), carrier.format, carrier.underlying)
+           })
     } yield o.map(_ => carrier)
 
 

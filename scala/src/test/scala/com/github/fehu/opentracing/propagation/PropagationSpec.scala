@@ -17,7 +17,7 @@ abstract class PropagationSpec[F[_]: Traced: Sync] extends AnyFreeSpec with Spec
   "Serialize and deserialize span context through `TextMap` built-in format" in dispatcher.unsafeRunSync {
     for {
       _        <- Sync[F].pure(()).trace("A")
-      carrier0 <- Traced.extractContext[F].to[TextMapPropagation]
+      carrier0 <- Traced.extractContext[F].to(TextMapPropagation)
       repr      = carrier0.fold(Map.empty[String, String])(_.repr)
       carrier1  = TextMapPropagation(repr)
       _        <- Sync[F].pure(()).injectPropagated(carrier1)("B")

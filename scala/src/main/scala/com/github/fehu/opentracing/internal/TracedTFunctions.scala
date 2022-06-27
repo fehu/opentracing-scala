@@ -4,9 +4,9 @@ import cats.data.StateT
 import cats.effect.{ IO, LiftIO, Sync }
 import cats.syntax.functor._
 import cats.{ Applicative, ApplicativeError, Functor, ~> }
-import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.transformer.TracedT
 import com.github.fehu.opentracing.transformer.TracedT.AutoConvert._
 
@@ -23,8 +23,7 @@ private[opentracing] trait TracedTFunctions {
   def delay[F[_]: Sync, A](a: => A): TracedT[F, A] = defer(pure(a))
 
   def currentSpan[F[_]: Sync]: Traced.SpanInterface[TracedT[F, *]] = traced.currentSpan
-  def extractContext[F[_]: Sync, C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
-    traced.extractContext(carrier, format)
+  def extractContext[F[_]: Sync, C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
 
   def liftK[F[_]: Applicative]: F ~> TracedT[F, *] = λ[F ~> TracedT[F, *]](liftF(_))
 
@@ -52,8 +51,7 @@ abstract class TracedTFunctionsForSync[F[_]: Sync] {
   def delay[A](a: => A): TracedT[F, A] = defer(pure(a))
 
   def currentSpan: Traced.SpanInterface[TracedT[F, *]] = traced.currentSpan
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): TracedT[F, Option[C0]] =
-    traced.extractContext(carrier, format)
+  def extractContext[C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
 
   def liftK: F ~> TracedT[F, *] = λ[F ~> TracedT[F, *]](liftF(_))
   def mapK[G[_]](fk: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.stateT.mapK(fk))

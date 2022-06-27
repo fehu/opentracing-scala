@@ -1,8 +1,8 @@
 package com.github.fehu.opentracing.internal.syntax
 
 import io.opentracing.SpanContext
-import io.opentracing.propagation.Format
 
+import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.{ Traced, Traced2 }
 
 protected[opentracing] trait LowPrioritySyntax {
@@ -17,11 +17,11 @@ protected[opentracing] trait LowPrioritySyntax {
     def inject[F[_[*], *]](context: Option[SpanContext])(operation: String, tags: Traced.Tag*)(implicit traced: Traced2[F, G]): F[G, A] =
       context.map(inject(_)(operation, tags: _*)).getOrElse(traced.lift(ga))
 
-    def injectFrom[F[_[*], *], C](format: Format[C])(carrier: C)(operation: String, tags: Traced.Tag*)(implicit traced: Traced2[F, G]): F[G, A] =
-      traced.injectContextFrom(format)(carrier)(operation, tags: _*)(traced.lift(ga))
+    def injectFrom[F[_[*], *]](carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*)(implicit traced: Traced2[F, G]): F[G, A] =
+      traced.injectContextFrom(carrier)(operation, tags: _*)(traced.lift(ga))
 
-    def injectFrom[F[_[*], *], C](carrier: Option[C], format: Format[C])(operation: String, tags: Traced.Tag*)(implicit traced: Traced2[F, G]): F[G, A] =
-      carrier.map(injectFrom(format)(_)(operation, tags: _*)).getOrElse(traced.lift(ga))
+    def injectFrom[F[_[*], *]](carrier: Option[Propagation#Carrier])(operation: String, tags: Traced.Tag*)(implicit traced: Traced2[F, G]): F[G, A] =
+      carrier.map(injectFrom(_)(operation, tags: _*)).getOrElse(traced.lift(ga))
 
   }
 

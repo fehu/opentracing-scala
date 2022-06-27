@@ -2,21 +2,22 @@ package com.github.fehu.opentracing.propagation
 
 import io.opentracing.propagation.Format
 
-trait Propagation {
+trait Propagation { prop =>
   type Underlying
-  def underlying: Underlying
+  type Repr
+
+  def apply(): Carrier
+  def apply(repr: Repr): Carrier
 
   def format: Format[Underlying]
 
-  type Repr
-  def repr: Repr
-}
+  trait Carrier {
+    type Underlying = prop.Underlying
 
-trait PropagationCompanion[C <: Propagation] {
-  def apply(): C
-  def apply(repr: C#Repr): C
+    def underlying: Underlying
+    def repr: Repr
 
-  def format: Format[C#Underlying]
-
-  final implicit def companion: PropagationCompanion[C] = this
+    final def format: Format[Underlying] = prop.format
+    final def propagation: prop.type = prop
+  }
 }

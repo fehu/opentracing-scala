@@ -1,13 +1,13 @@
 package com.github.fehu.opentracing
 
-import scala.language.{ existentials, implicitConversions }
+import scala.language.implicitConversions
 
 import cats.{ Show, ~> }
 import cats.effect.Resource
 import cats.syntax.show._
-import io.opentracing.propagation.Format
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
+import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.util.ErrorLogger
 import com.github.fehu.opentracing.util.FunctionK2.~~>
 
@@ -30,9 +30,9 @@ trait Traced[F[_]] extends Traced.Interface[F] {
   def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
 
   def injectContext(context: SpanContext): Traced.Interface[F]
-  def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[F]
+  def injectContextFrom(carrier: Propagation#Carrier): Traced.Interface[F]
 
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): F[Option[C0]]
+  def extractContext[C <: Propagation#Carrier](carrier: C): F[Option[C]]
 }
 
 object Traced {

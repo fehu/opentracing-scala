@@ -3,9 +3,9 @@ package com.github.fehu.opentracing.internal
 import cats.effect.Resource
 import cats.{Applicative, Defer, ~>}
 import io.opentracing.SpanContext
-import io.opentracing.propagation.Format
 
 import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.propagation.Propagation
 
 protected[opentracing] class TracedStub[F[_]](implicit A: Applicative[F], D: Defer[F]) extends TracedInterfaceStub[F] with Traced[F] {
   def pure[A](a: A): F[A] = A.pure(a)
@@ -14,8 +14,8 @@ protected[opentracing] class TracedStub[F[_]](implicit A: Applicative[F], D: Def
   def forceCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]] = A.pure(currentSpan)
   def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]] = A.pure(currentSpan)
   def injectContext(context: SpanContext): Traced.Interface[F] = new TracedInterfaceStub[F]
-  def injectContextFrom[C](format: Format[C])(carrier: C): Traced.Interface[F] = new TracedInterfaceStub[F]
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): F[Option[C0]] = A.pure(None)
+  def injectContextFrom(carrier: Propagation#Carrier): Traced.Interface[F] = new TracedInterfaceStub[F]
+  def extractContext[C <: Propagation#Carrier](carrier: C): F[Option[C]] = A.pure(None)
 }
 
 protected[opentracing] class TracedInterfaceStub[F[_]](implicit A: Applicative[F]) extends Traced.Interface[F] {
