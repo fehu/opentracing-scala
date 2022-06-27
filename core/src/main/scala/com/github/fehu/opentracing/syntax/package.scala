@@ -42,24 +42,24 @@ package object syntax extends LowPrioritySyntax {
 
     def extractContext[F[_]]: TracedFunctions.Extract[F] = TracedFunctions.extractInstance.asInstanceOf[TracedFunctions.Extract[F]]
 
-    def mapK[T[_[*], *], F[_], G[_]: Functor](f: F ~> G)(implicit traced: Traced2[T, F]): T[F, *] ~> T[G, *] = traced.mapK(f)
+    def mapK[T[_[_], _], F[_], G[_]: Functor](f: F ~> G)(implicit traced: Traced2[T, F]): T[F, _] ~> T[G, _] = traced.mapK(f)
 
     def trace[F[_]](operation: String, tags: Traced.Tag*): TracedFunctions.Trace[F] = new TracedFunctions.Trace(operation, tags)
 
     def traceK[F[_]](operation: String, tags: Traced.Tag*)(implicit traced: Traced[F]): F ~> F =
       FK.lift[F, F](f => traced(operation, tags*)(f))
 
-    def pure[T[_[*], *], F[_]]: TracedFunctions.Pure[F] = TracedFunctions.pureInstance.asInstanceOf[TracedFunctions.Pure[F]]
+    def pure[T[_[_], _], F[_]]: TracedFunctions.Pure[F] = TracedFunctions.pureInstance.asInstanceOf[TracedFunctions.Pure[F]]
 
     def defer[F[_]]: TracedFunctions.Defer[F] = TracedFunctions.deferInstance.asInstanceOf[TracedFunctions.Defer[F]]
 
     def delay[F[_]]: TracedFunctions.Delay[F] = TracedFunctions.delayInstance.asInstanceOf[TracedFunctions.Delay[F]]
 
-    def liftK[T[_[*], *], F[_]: Applicative](implicit traced: Traced2[T, F]): F ~> T[F, *] =
-      FK.lift[F, T[F, *]](f => traced.lift(f))
+    def liftK[T[_[_], _], F[_]: Applicative](implicit traced: Traced2[T, F]): F ~> T[F, _] =
+      FK.lift[F, T[F, _]](f => traced.lift(f))
 
-    def runK[T[_[*], *], F[_]: FlatMap](params: Traced.RunParams)(implicit traced: Traced2[T, F]): T[F, *] ~> F =
-      FK.lift[T[F, *], F](t => traced.run(t, params))
+    def runK[T[_[_], _], F[_]: FlatMap](params: Traced.RunParams)(implicit traced: Traced2[T, F]): T[F, _] ~> F =
+      FK.lift[T[F, _], F](t => traced.run(t, params))
 
   }
 
@@ -94,7 +94,7 @@ package object syntax extends LowPrioritySyntax {
 
   final implicit class TracedObjOps(obj: Traced.type) extends TracedFunctions
 
-  final implicit class Traced2Ops[F[_[*], *], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
+  final implicit class Traced2Ops[F[_[_], _], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
     def runTracedP(params: Traced.RunParams): G[A] = traced.run(fa, params)
 
     def runTraced(
