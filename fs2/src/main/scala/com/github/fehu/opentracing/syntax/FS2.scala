@@ -2,7 +2,7 @@ package com.github.fehu.opentracing.syntax
 
 import _root_.fs2.Stream
 import cats.~>
-import cats.effect.Bracket
+import cats.effect.MonadCancelThrow
 import cats.syntax.apply._
 import io.opentracing.SpanContext
 import io.opentracing.propagation.Format
@@ -12,7 +12,7 @@ import com.github.fehu.opentracing.propagation.{ Propagation, PropagationCompani
 
 object FS2 {
 
-  final implicit class TracedFs2StreamOps[F[_]: Bracket[*[_], Throwable], A](stream: Stream[F, A])(implicit t: Traced[F]) {
+  final implicit class TracedFs2StreamOps[F[_]: MonadCancelThrow, A](stream: Stream[F, A])(implicit t: Traced[F]) {
 
     // // // Trace Entire Stream // // //
 

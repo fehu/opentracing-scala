@@ -12,6 +12,6 @@ libraryDependencies ++= Seq(
 
 enablePlugins(AssemblyPlugin)
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(true)
 
-packageBin in Compile := (assembly in Compile).value
+Compile / packageBin := (Compile / assembly).value

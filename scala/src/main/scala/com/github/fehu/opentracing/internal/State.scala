@@ -19,7 +19,13 @@ final case class State(
   private[opentracing] val hooks: Traced.Hooks,
   private[opentracing] val currentSpan: Option[Span],
   private[opentracing] val logError: ErrorLogger
-)
+) {
+  def toRunParams: Traced.RunParams = Traced.RunParams(tracer, hooks, Traced.ActiveSpan(currentSpan), logError)
+}
+
+object State {
+  def fromRunParams(params: Traced.RunParams): State = State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)
+}
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])(implicit sync: Sync[F])
   extends Traced.SpanInterface[F]

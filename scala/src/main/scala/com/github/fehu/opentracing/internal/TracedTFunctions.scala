@@ -30,15 +30,12 @@ private[opentracing] trait TracedTFunctions {
 
   def mapK[F[_]: Functor, G[_]](fk: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.stateT.mapK(fk))
 
-  def runK[F[_]: Sync](params: Traced.RunParams): TracedT[F, *] ~> F = λ[TracedT[F, *] ~> F](_.stateT.run(toState(params)).map(_._2))
+  def runK[F[_]: Sync](params: Traced.RunParams): TracedT[F, *] ~> F = λ[TracedT[F, *] ~> F](_.stateT.run(State.fromRunParams(params)).map(_._2))
 
   def traceK[F[_]: Sync](operation: String, tags: Traced.Tag*): F ~> TracedT[F, *] =
     λ[F ~> TracedT[F, *]](fa => traced.apply(operation, tags: _*)(liftF(fa)))
 
   private def traced[F[_]: Sync]: Traced[TracedT[F, *]] = TracedT.tracedTTracedInstance[F]
-
-  private def toState[F[_]: Functor](params: Traced.RunParams) =
-    State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)
 }
 
 abstract class TracedTFunctionsForSync[F[_]: Sync] {

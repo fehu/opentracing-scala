@@ -1,11 +1,11 @@
 // scalac plugin has its own version
 
 val scala212 = "2.12.14"
-val scala213 = "2.13.6"
+val scala213 = "2.13.8"
 
 ThisBuild / crossScalaVersions := List(scala212, scala213)
 ThisBuild / scalaVersion       := scala213
-ThisBuild / version            := "0.6.0"
+ThisBuild / version            := "0.7.0-SNAPSHOT"
 ThisBuild / organization       := "com.github.fehu"
 
 inThisBuild(Seq(
@@ -18,7 +18,7 @@ inThisBuild(Seq(
 lazy val root = (project in file("."))
   .settings(
     name := "opentracing",
-    skip in publish := true
+    publish / skip := true
   )
   .aggregate(scala, akka, fs2)
 

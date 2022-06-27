@@ -1,32 +1,36 @@
 package com.github.fehu.opentracing
 
+import java.util.concurrent.Executors
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-import org.scalatest.freespec.AnyFreeSpec
-import cats.effect.{ ContextShift, Effect, Timer }
-import cats.effect.syntax.effect._
+import cats.effect.{ Async, Sync, Temporal }
+import cats.effect.std.Dispatcher
+import cats.effect.syntax.async._
+import cats.effect.syntax.concurrent._
 import cats.syntax.apply._
+import cats.syntax.applicativeError._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import org.scalatest.Ignore
+import org.scalatest.freespec.AnyFreeSpec
 
 import com.github.fehu.opentracing.syntax._
 import com.github.fehu.opentracing.util.ErrorLogger
 
 @Ignore
-abstract class TraceSpec[F[_]: Traced] extends AnyFreeSpec with Spec {
-  implicit val effect: Effect[F]
-  implicit val cs: ContextShift[F]
-  implicit val timer: Timer[F]
+abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
+  val dispatcher: Dispatcher[F]
 
   implicit lazy val tracedRunParams: Traced.RunParams =
     Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty, ErrorLogger.stdout)
 
-  "Trace nested defer / delay" in {
-    Effect[F].defer {
-      Effect[F].defer {
-        Effect[F].defer {
-          Effect[F].delay {
+  "Trace nested defer / delay" in dispatcher.unsafeRunSync{
+    Sync[F].defer {
+      Sync[F].defer {
+        Sync[F].defer {
+          Sync[F].delay {
             ()
           }.trace("last", "depth" -> 3)
         }.trace("inner", "depth" -> 2)
@@ -34,42 +38,164 @@ abstract class TraceSpec[F[_]: Traced] extends AnyFreeSpec with Spec {
     }.trace("outer", "depth" -> 0)
      .map { _ =>
       finishedSpans() shouldBe Seq(
-        TestedSpan(traceId = 1, spanId = 5, parentId = 4, operationName = "last",   tags = Map("depth" -> Int.box(3))),
-        TestedSpan(traceId = 1, spanId = 4, parentId = 3, operationName = "inner",  tags = Map("depth" -> Int.box(2))),
-        TestedSpan(traceId = 1, spanId = 3, parentId = 2, operationName = "middle", tags = Map("depth" -> Int.box(1))),
-        TestedSpan(traceId = 1, spanId = 2, parentId = 0, operationName = "outer",  tags = Map("depth" -> Int.box(0)))
-      )
-    }.toIO.unsafeRunSync()
-  }
-
-  "Trace nested map / flatMap" in {
-    for {
-      _ <- Effect[F].pure(()).trace("one")
-      _ <- Effect[F].pure(()).trace("two")
-      _ <- Effect[F].pure(()).trace("three")
-      _ <- Effect[F].pure(()).trace("four")
-      _ <- Effect[F].pure(()).trace("five")
-    } yield {
-      finishedSpans() shouldBe Seq(
-        TestedSpan(traceId = 6, spanId = 7,  parentId = 0,  operationName = "one"),
-        TestedSpan(traceId = 6, spanId = 8,  parentId = 7,  operationName = "two"),
-        TestedSpan(traceId = 6, spanId = 9,  parentId = 8,  operationName = "three"),
-        TestedSpan(traceId = 6, spanId = 10, parentId = 9,  operationName = "four"),
-        TestedSpan(traceId = 6, spanId = 11, parentId = 10, operationName = "five")
+        TestedSpan(operationName = "last",   spanId = 4, parentId = 3, tags = Map("depth" -> Int.box(3))),
+        TestedSpan(operationName = "inner",  spanId = 3, parentId = 2, tags = Map("depth" -> Int.box(2))),
+        TestedSpan(operationName = "middle", spanId = 2, parentId = 1, tags = Map("depth" -> Int.box(1))),
+        TestedSpan(operationName = "outer",  spanId = 1, parentId = 0, tags = Map("depth" -> Int.box(0)))
       )
     }
-  }.toIO.unsafeRunSync()
+  }
 
-  "Trace when context is shifted and timer is used" in {
-    val f1 = Timer[F].sleep(500.millis) *> Effect[F].delay(()).trace("f1")
-    val f2 = (Timer[F].sleep(500.millis) *> Effect[F].delay(())).trace("f2")
-    val f = (f1 *> ContextShift[F].shift *> f2).trace("f")
+  "Trace nested map / flatMap" in dispatcher.unsafeRunSync{
+    for {
+      _ <- Sync[F].pure(()).trace("one")
+      _ <- Sync[F].pure(()).trace("two")
+      _ <- Sync[F].pure(()).trace("three")
+      _ <- Sync[F].pure(()).trace("four")
+      _ <- Sync[F].pure(()).trace("five")
+    } yield {
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "one",   spanId = 1, parentId = 0),
+        TestedSpan(operationName = "two",   spanId = 2, parentId = 1),
+        TestedSpan(operationName = "three", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "four",  spanId = 4, parentId = 3),
+        TestedSpan(operationName = "five",  spanId = 5, parentId = 4)
+      )
+    }
+  }
+
+  "Trace when timer is used" in dispatcher.unsafeRunSync{
+    val f1 = Temporal[F].sleep(500.millis).trace("s1") *> Sync[F].delay(()).trace("f1")
+    val f2 = Sync[F].defer(Temporal[F].sleep(500.millis).trace("s2")).trace("f2")
+    val f = (f1 *> f2).trace("f")
     f.map { _ =>
       finishedSpans() shouldBe Seq(
-        TestedSpan(traceId = 12, spanId = 14, parentId = 13, operationName = "f1"),
-        TestedSpan(traceId = 12, spanId = 15, parentId = 14, operationName = "f2"),
-        TestedSpan(traceId = 12, spanId = 13, parentId = 0,  operationName = "f")
+        TestedSpan(operationName = "s1", spanId = 2, parentId = 1),
+        TestedSpan(operationName = "f1", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "s2", spanId = 5, parentId = 4),
+        TestedSpan(operationName = "f2", spanId = 4, parentId = 3),
+        TestedSpan(operationName = "f",  spanId = 1, parentId = 0)
       )
-    }.toIO.unsafeRunSync()
+    }
   }
+
+  "Trace when evaluated on other context" in dispatcher.unsafeRunSync {
+    val f1 = Sync[F].delay(()).trace("f1")
+    val f2 = Sync[F].delay(()).trace("f2")
+    val f3 = Sync[F].delay(()).trace("f3")
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val f = (f1 *> f2.evalOn(ec) *> f3).trace("f")
+    f.map { _ =>
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "f1", spanId = 2, parentId = 1),
+        TestedSpan(operationName = "f2", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "f3", spanId = 4, parentId = 2),
+        TestedSpan(operationName = "f",  spanId = 1, parentId = 0)
+      )
+    }
+  }
+
+  "Trace when starting and joining fiber" in dispatcher.unsafeRunSync {
+    val f1 = Sync[F].delay(()).trace("f1")
+    val f2 = Temporal[F].sleep(10.millis).trace("f2")
+    val f3 = Sync[F].delay(()).trace("f3")
+    val f4 = Sync[F].delay(()).trace("f4")
+    val f5 = Sync[F].delay(()).trace("f5")
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val f = (f1 *> f2.startOn(ec) <* f3)
+              .trace("fff")
+              .flatMap(_.join *> f4)
+              .trace("ff")
+              .productR(f5)
+              .trace("f")
+    f.map { _ =>
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "f1",  spanId = 4, parentId = 3),
+        TestedSpan(operationName = "f3",  spanId = 6, parentId = 4),
+        TestedSpan(operationName = "fff", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "f2",  spanId = 5, parentId = 4),
+        TestedSpan(operationName = "f4",  spanId = 7, parentId = 4),
+        TestedSpan(operationName = "ff",  spanId = 2, parentId = 1),
+        TestedSpan(operationName = "f5",  spanId = 8, parentId = 7),
+        TestedSpan(operationName = "f",   spanId = 1, parentId = 0),
+      )
+    }
+  }
+
+  "Trace running in background" in dispatcher.unsafeRunSync {
+    val f1 = Sync[F].delay(()).trace("f1")
+    val f2 = Sync[F].delay(()).trace("f2")
+    val f3 = Sync[F].delay(()).trace("f3")
+    val f4 = Sync[F].delay(()).trace("f4")
+    val f5 = Sync[F].delay(()).trace("f5")
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val f = (f1 *> (f2 *> f3).backgroundOn(ec).use(_ <* f4).trace("ff") <* f5).trace("f")
+    f.map { _ =>
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "f1", spanId = 2, parentId = 1),
+        TestedSpan(operationName = "f2", spanId = 4, parentId = 3),
+        TestedSpan(operationName = "f3", spanId = 5, parentId = 4),
+        TestedSpan(operationName = "f4", spanId = 6, parentId = 3),
+        TestedSpan(operationName = "ff", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "f5", spanId = 7, parentId = 6),
+        TestedSpan(operationName = "f",  spanId = 1, parentId = 0),
+      )
+    }
+  }
+
+  "Trace memorize" in dispatcher.unsafeRunSync {
+    val f1 = Sync[F].delay(()).trace("f1")
+    val f2 = Sync[F].delay(()).trace("f2")
+    val f3 = Sync[F].delay(()).trace("f3")
+    val f4 = Sync[F].delay(()).trace("f4")
+    val f5 = Sync[F].delay(()).trace("f5")
+    val f = (f1 *> f2 *> f3.memoize.flatMap(ff => ff *> f4 *> ff) *> f5).trace("f")
+    f.map { _ =>
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "f1", spanId = 2, parentId = 1),
+        TestedSpan(operationName = "f2", spanId = 3, parentId = 2),
+        TestedSpan(operationName = "f3", spanId = 4, parentId = 3),
+        TestedSpan(operationName = "f4", spanId = 5, parentId = 4),
+        TestedSpan(operationName = "f5", spanId = 6, parentId = 5),
+        TestedSpan(operationName = "f",  spanId = 1, parentId = 0),
+      )
+    }
+  }
+
+  "Trace timeouts" in dispatcher.unsafeRunSync {
+    val f1 = Sync[F].delay(()).trace("f1")
+    val f2 = Temporal[F].sleep(50.millis).trace("f2-1") *> Temporal[F].sleep(50.millis).trace("f2-2")
+    val f3 = Sync[F].delay(()).trace("f3")
+    val f4 = Sync[F].delay(()).trace("f4")
+    val f5 = Temporal[F].sleep(50.millis).trace("f5-1") *> Temporal[F].sleep(50.millis).trace("f5-2")
+    val f6 = Sync[F].delay(()).trace("f6")
+    val f7 = Temporal[F].sleep(50.millis).trace("f7-1") *> Temporal[F].sleep(50.millis).trace("f7-2")
+    val f8 = Sync[F].delay(()).trace("f8")
+    val f = (f1 *>
+             Temporal[F].timeoutTo(f2, 40.millis, f3).trace("t1") *>
+             f4 *>
+             Temporal[F].timeout(f5, 40.millis).trace("t2").attempt *>
+             f6 *>
+             Temporal[F].timeoutAndForget(f7, 40.millis).trace("t3").attempt *>
+             f8
+            ).trace("f")
+
+    f.map { _ =>
+      finishedSpans() shouldBe Seq(
+        TestedSpan(operationName = "f1",   spanId = 2,  parentId = 1),
+        TestedSpan(operationName = "f2-1", spanId = 4,  parentId = 3),
+        TestedSpan(operationName = "f3",   spanId = 5,  parentId = 3),
+        TestedSpan(operationName = "t1",   spanId = 3,  parentId = 2),
+        TestedSpan(operationName = "f4",   spanId = 6,  parentId = 5),
+        TestedSpan(operationName = "f5-1", spanId = 8,  parentId = 7),
+        TestedSpan(operationName = "t2",   spanId = 7,  parentId = 6),
+        TestedSpan(operationName = "f6",   spanId = 9,  parentId = 6),
+        TestedSpan(operationName = "f7-1", spanId = 11, parentId = 10),
+        TestedSpan(operationName = "t3",   spanId = 10, parentId = 9),
+        TestedSpan(operationName = "f8",   spanId = 12, parentId = 9),
+        TestedSpan(operationName = "f",    spanId = 1,  parentId = 0),
+      )
+    }
+  }
+
 }
