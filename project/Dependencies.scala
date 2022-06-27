@@ -7,6 +7,7 @@ object Dependencies {
 
   lazy val `opentracing-api`  = "io.opentracing"   % "opentracing-api"  % Version.opentracing
   lazy val `opentracing-mock` = "io.opentracing"   % "opentracing-mock" % Version.opentracing
+  lazy val `opentracing-noop` = "io.opentracing"   % "opentracing-noop" % Version.opentracing
   lazy val `jaeger-client`    = "io.jaegertracing" % "jaeger-client"    % Version.jaegerClient
 
   lazy val `cats-core`        = "org.typelevel"  %% "cats-core"        % Version.cats

@@ -38,9 +38,7 @@ ThisBuild / Compile / scalacOptions ++= Seq(
   }
 }
 
-ThisBuild / Test / parallelExecution := false
-
-// // //
+// // // Modules // // //
 
 def moduleName(suff: String): String = {
   val suff1 = if (suff.nonEmpty) s"-$suff" else suff
@@ -52,7 +50,7 @@ lazy val root = (project in file("."))
     name := moduleName(""),
     publish / skip := true
   )
-  .aggregate(core, akka, fs2, jaeger)
+  .aggregate(core, akka, fs2, noop, jaeger)
 
 lazy val core = (project in file("core"))
   .settings(
@@ -86,18 +84,28 @@ lazy val fs2 = (project in file("fs2"))
   )
   .dependsOn(core)
 
+// // // Backends // // //
+
+lazy val noop = (project in file("noop"))
+  .settings(
+    name := moduleName("noop"),
+    libraryDependencies += Dependencies.`opentracing-noop`
+  ).dependsOn(core)
+
 lazy val jaeger = (project in file("jaeger"))
   .settings(
     name := moduleName("jaeger"),
     libraryDependencies += Dependencies.`jaeger-client`
   ).dependsOn(core)
 
-// // //
+// // // Tests // // //
 
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,
   Dependencies.`opentracing-mock` % Test
 )
+
+ThisBuild / Test / parallelExecution := false
 
 // // //
 
