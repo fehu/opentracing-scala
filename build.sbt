@@ -40,6 +40,8 @@ ThisBuild / Compile / scalacOptions ++= Seq(
 
 ThisBuild / Test / parallelExecution := false
 
+// // //
+
 def moduleName(suff: String): String = {
   val suff1 = if (suff.nonEmpty) s"-$suff" else suff
   s"opentracing-scala$suff1"
@@ -50,7 +52,7 @@ lazy val root = (project in file("."))
     name := moduleName(""),
     publish / skip := true
   )
-  .aggregate(core, akka, fs2)
+  .aggregate(core, akka, fs2, jaeger)
 
 lazy val core = (project in file("core"))
   .settings(
@@ -84,11 +86,20 @@ lazy val fs2 = (project in file("fs2"))
   )
   .dependsOn(core)
 
+lazy val jaeger = (project in file("jaeger"))
+  .settings(
+    name := moduleName("jaeger"),
+    libraryDependencies += Dependencies.`jaeger-client`
+  ).dependsOn(core)
+
+// // //
+
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,
   Dependencies.`opentracing-mock` % Test
 )
 
+// // //
 
 // Has its own configuration file (and own version)
 lazy val compilerPlugin = project in file("compiler-plugin") settings (

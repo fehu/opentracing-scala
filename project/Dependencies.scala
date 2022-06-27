@@ -22,7 +22,7 @@ object Dependencies {
 
   object Version {
     lazy val opentracing    = "0.33.0"
-    lazy val jaegerClient   = "1.5.0"
+    lazy val jaegerClient   = "1.8.0"
 
     lazy val cats           = "2.8.0"
     lazy val catsEffect     = "3.3.12"
