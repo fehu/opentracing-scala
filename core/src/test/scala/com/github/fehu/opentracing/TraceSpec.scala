@@ -17,14 +17,13 @@ import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 
 import com.github.fehu.opentracing.syntax.*
-import com.github.fehu.opentracing.util.ErrorLogger
 
 @Ignore
 abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
   val dispatcher: Dispatcher[F]
 
-  implicit lazy val tracedRunParams: Traced.RunParams =
-    Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty, ErrorLogger.stdout)
+  implicit lazy val tracedSetup: Traced.Setup = Traced.Setup.default(mockTracer)
+  implicit lazy val tracedSpan: Traced.ActiveSpan = Traced.ActiveSpan.empty
 
   "Trace nested defer / delay" in dispatcher.unsafeRunSync{
     Sync[F].defer {

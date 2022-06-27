@@ -97,13 +97,16 @@ package object syntax extends LowPrioritySyntax {
   final implicit class Traced2Ops[F[_[_], _], G[_], A](fa: F[G, A])(implicit traced: Traced2[F, G]) {
     def runTracedP(params: Traced.RunParams): G[A] = traced.run(fa, params)
 
-    def runTraced(
+    def runTraced(implicit active: Traced.ActiveSpan, setup: Traced.Setup): G[A] =
+      runTracedP(Traced.RunParams.fromScope)
+
+    def runTraced0(
       tracer: Tracer,
       hooks: Traced.Hooks = Traced.Hooks(),
       parent: Traced.ActiveSpan = Traced.ActiveSpan.empty,
       logError: ErrorLogger = ErrorLogger.stdout
     ): G[A] =
-      runTracedP(Traced.RunParams(tracer, hooks, parent, logError))
+      runTracedP(Traced.RunParams(tracer, hooks, logError, parent))
   }
 
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])

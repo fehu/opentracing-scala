@@ -6,11 +6,10 @@ import cats.effect.unsafe.implicits.global
 import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.propagation.PropagationSpec
 import com.github.fehu.opentracing.transformer.TracedIO
-import com.github.fehu.opentracing.util.ErrorLogger
 
 class PropagationTracedIOSpec extends PropagationSpec[TracedIO] {
-  implicit lazy val tracedRunParams: Traced.RunParams =
-    Traced.RunParams(mockTracer, Traced.Hooks(), Traced.ActiveSpan.empty, ErrorLogger.stdout)
+  implicit lazy val tracedSetup: Traced.Setup = Traced.Setup.default(mockTracer)
+  implicit lazy val tracedSpan: Traced.ActiveSpan = Traced.ActiveSpan.empty
 
-  def dispatcher: Dispatcher[TracedIO] = TracedIO.dispatcher(tracedRunParams).allocated.unsafeRunSync()._1
+  def dispatcher: Dispatcher[TracedIO] = TracedIO.Dispatcher.fromScope.allocated.unsafeRunSync()._1
 }

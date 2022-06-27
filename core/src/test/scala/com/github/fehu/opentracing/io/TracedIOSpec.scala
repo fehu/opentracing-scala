@@ -7,5 +7,5 @@ import com.github.fehu.opentracing.transformer.*
 import com.github.fehu.opentracing.TraceSpec
 
 class TracedIOSpec extends TraceSpec[TracedIO] {
-  val dispatcher: Dispatcher[TracedIO] = TracedIO.dispatcher(tracedRunParams).allocated.unsafeRunSync()._1
+  val dispatcher: Dispatcher[TracedIO] = TracedIO.Dispatcher.fromScope.allocated.unsafeRunSync()._1
 }

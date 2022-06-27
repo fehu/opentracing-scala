@@ -172,15 +172,20 @@ object Traced {
   }
   object SpanInterfaceK2 extends SpanInterfaceK2
 
-  final case class RunParams(tracer: Tracer, hooks: Hooks, activeSpan: ActiveSpan, logError: ErrorLogger)
+  final case class Setup(tracer: Tracer, hooks: Hooks, logError: ErrorLogger)
+  object Setup {
+    def default(tracer: Tracer): Setup = Setup(tracer, Hooks(), ErrorLogger.stdout)
+  }
+
+  final case class RunParams(setup: Setup, activeSpan: ActiveSpan)
 
   object RunParams {
-    def apply(tracer: Tracer, hooks: Hooks, logError: ErrorLogger): Partial = Partial(tracer, hooks, logError)
+    def apply(tracer: Tracer, hooks: Hooks, logError: ErrorLogger, activeSpan: ActiveSpan): RunParams =
+      RunParams(Setup(tracer, hooks, logError), activeSpan)
 
-    final case class Partial(tracer: Tracer, hooks: Hooks, logError: ErrorLogger) {
-      def apply(active: ActiveSpan): RunParams = RunParams(tracer, hooks, active, logError)
-    }
-    implicit def fromPartial(p: Partial)(implicit active: ActiveSpan): RunParams = p(active)
+    implicit def fromPair(p: (Setup, ActiveSpan)): RunParams = RunParams(p._1, p._2)
+
+    implicit def fromScope(implicit active: ActiveSpan, setup: Setup): RunParams = RunParams(setup, active)
   }
 
   final class ActiveSpan(val maybe: Option[Span]) extends AnyVal {

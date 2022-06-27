@@ -46,11 +46,18 @@ object TracedT extends TracedTInstances with TracedTFunctions {
 object TracedIO extends TracedTFunctionsForSync[IO] {
   def mapIOK[F[_]: LiftIO]: TracedIO ~> TracedT[F, _] = mapK(LiftIO.liftK)
 
-  def dispatcher(d: Dispatcher[IO], params: Traced.RunParams): Dispatcher[TracedIO] =
-    new TracedTDispatcher[IO](d, State.fromRunParams(params))
+  object Dispatcher {
+    import cats.effect.std.Dispatcher as CatsDispatcher
 
-  def dispatcher(params: Traced.RunParams): Resource[IO, Dispatcher[TracedT[IO, _]]] =
-    Dispatcher[IO].map(new TracedTDispatcher[IO](_, State.fromRunParams(params)))
+    def apply(d: CatsDispatcher[IO], params: Traced.RunParams): CatsDispatcher[TracedIO] =
+      new TracedTDispatcher[IO](d, State.fromRunParams(params))
+
+    def apply(params: Traced.RunParams): Resource[IO, CatsDispatcher[TracedT[IO, _]]] =
+      CatsDispatcher[IO].map(new TracedTDispatcher[IO](_, State.fromRunParams(params)))
+
+    def fromScope(implicit params: Traced.RunParams): Resource[IO, CatsDispatcher[TracedT[IO, _]]] =
+      apply(params)
+  }
 }
 
 private[opentracing] class TracedTDispatcher[F[_]: FlatMap](df: Dispatcher[F], s0: State) extends Dispatcher[TracedT[F, _]] {

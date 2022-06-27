@@ -15,16 +15,19 @@ import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.util.ErrorLogger
 
 final case class State(
-  private[opentracing] val tracer: Tracer,
-  private[opentracing] val hooks: Traced.Hooks,
+  private[opentracing] val setup: Traced.Setup,
   private[opentracing] val currentSpan: Option[Span],
-  private[opentracing] val logError: ErrorLogger
 ) {
-  def toRunParams: Traced.RunParams = Traced.RunParams(tracer, hooks, Traced.ActiveSpan(currentSpan), logError)
+  @inline private[opentracing] def tracer: Tracer = setup.tracer
+  @inline private[opentracing] def hooks: Traced.Hooks = setup.hooks
+  @inline private[opentracing] def logError: ErrorLogger = setup.logError
+
+  @inline def activeSpan: Traced.ActiveSpan = Traced.ActiveSpan(currentSpan)
+  @inline def toRunParams: Traced.RunParams = Traced.RunParams(setup, activeSpan)
 }
 
 object State {
-  def fromRunParams(params: Traced.RunParams): State = State(params.tracer, params.hooks, params.activeSpan.maybe, params.logError)
+  def fromRunParams(params: Traced.RunParams): State = State(params.setup, params.activeSpan.maybe)
 }
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])(implicit sync: Sync[F])
