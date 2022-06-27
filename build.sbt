@@ -40,16 +40,21 @@ ThisBuild / Compile / scalacOptions ++= Seq(
 
 ThisBuild / Test / parallelExecution := false
 
+def moduleName(suff: String): String = {
+  val suff1 = if (suff.nonEmpty) s"-$suff" else suff
+  s"opentracing-scala$suff1"
+}
+
 lazy val root = (project in file("."))
   .settings(
-    name := "opentracing",
+    name := moduleName(""),
     publish / skip := true
   )
-  .aggregate(scala, akka, fs2)
+  .aggregate(core, akka, fs2)
 
-lazy val scala = (project in file("scala"))
+lazy val core = (project in file("core"))
   .settings(
-    name := "opentracing-scala",
+    name := moduleName("core"),
     libraryDependencies ++= Seq(
       Dependencies.`opentracing-api`,
       Dependencies.`cats-core`,
@@ -66,18 +71,18 @@ lazy val scala = (project in file("scala"))
 
 lazy val akka = (project in file("akka"))
   .settings(
-    name := "opentracing-akka",
+    name := moduleName("akka"),
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies
   )
-  .dependsOn(scala % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val fs2 = (project in file("fs2"))
   .settings(
-    name := "opentracing-fs2",
+    name := moduleName("fs2"),
     libraryDependencies += Dependencies.`fs2-core`
   )
-  .dependsOn(scala)
+  .dependsOn(core)
 
 lazy val testDependencies = Seq(
   Dependencies.scalatest          % Test,
