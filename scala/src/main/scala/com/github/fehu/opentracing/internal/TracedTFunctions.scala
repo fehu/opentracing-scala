@@ -2,13 +2,14 @@ package com.github.fehu.opentracing.internal
 
 import cats.data.StateT
 import cats.effect.{ IO, LiftIO, Sync }
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import cats.{ Applicative, ApplicativeError, Functor, ~> }
 
 import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.internal.compat.FK
 import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.transformer.TracedT
-import com.github.fehu.opentracing.transformer.TracedT.AutoConvert._
+import com.github.fehu.opentracing.transformer.TracedT.AutoConvert.*
 
 private[opentracing] trait TracedTFunctions {
   def pure[F[_]: Applicative, A](a: A): TracedT[F, A] = TracedT(StateT.pure(a))
@@ -22,19 +23,21 @@ private[opentracing] trait TracedTFunctions {
   def deferIO[F[_]: Sync: LiftIO, A](io: => IO[A]): TracedT[F, A] = defer(liftIO(io))
   def delay[F[_]: Sync, A](a: => A): TracedT[F, A] = defer(pure(a))
 
-  def currentSpan[F[_]: Sync]: Traced.SpanInterface[TracedT[F, *]] = traced.currentSpan
+  def currentSpan[F[_]: Sync]: Traced.SpanInterface[TracedT[F, _]] = traced.currentSpan
   def extractContext[F[_]: Sync, C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
 
-  def liftK[F[_]: Applicative]: F ~> TracedT[F, *] = λ[F ~> TracedT[F, *]](liftF(_))
+  def liftK[F[_]: Applicative]: F ~> TracedT[F, _] = FK.lift[F, TracedT[F, _]](liftF)
 
-  def mapK[F[_]: Functor, G[_]](fk: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.stateT.mapK(fk))
+  def mapK[F[_]: Functor, G[_]](fk: F ~> G): TracedT[F, _] ~> TracedT[G, _] =
+    FK.lift[TracedT[F, _], TracedT[G, _]](_.stateT.mapK(fk))
 
-  def runK[F[_]: Sync](params: Traced.RunParams): TracedT[F, *] ~> F = λ[TracedT[F, *] ~> F](_.stateT.run(State.fromRunParams(params)).map(_._2))
+  def runK[F[_]: Sync](params: Traced.RunParams): TracedT[F, _] ~> F =
+    FK.lift[TracedT[F, _], F](_.stateT.run(State.fromRunParams(params)).map(_._2))
 
-  def traceK[F[_]: Sync](operation: String, tags: Traced.Tag*): F ~> TracedT[F, *] =
-    λ[F ~> TracedT[F, *]](fa => traced.apply(operation, tags: _*)(liftF(fa)))
+  def traceK[F[_]: Sync](operation: String, tags: Traced.Tag*): F ~> TracedT[F, _] =
+    FK.lift[F, TracedT[F, _]](fa => traced.apply(operation, tags*)(liftF(fa)))
 
-  private def traced[F[_]: Sync]: Traced[TracedT[F, *]] = TracedT.tracedTTracedInstance[F]
+  private def traced[F[_]: Sync]: Traced[TracedT[F, _]] = TracedT.tracedTTracedInstance[F]
 }
 
 abstract class TracedTFunctionsForSync[F[_]: Sync] {
@@ -50,15 +53,16 @@ abstract class TracedTFunctionsForSync[F[_]: Sync] {
   def deferIO[A](io: => IO[A])(implicit lift: LiftIO[F]): TracedT[F, A] = defer(liftIO(io))
   def delay[A](a: => A): TracedT[F, A] = defer(pure(a))
 
-  def currentSpan: Traced.SpanInterface[TracedT[F, *]] = traced.currentSpan
+  def currentSpan: Traced.SpanInterface[TracedT[F, _]] = traced.currentSpan
   def extractContext[C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
 
-  def liftK: F ~> TracedT[F, *] = λ[F ~> TracedT[F, *]](liftF(_))
-  def mapK[G[_]](fk: F ~> G): TracedT[F, *] ~> TracedT[G, *] = λ[TracedT[F, *] ~> TracedT[G, *]](_.stateT.mapK(fk))
+  def liftK: F ~> TracedT[F, _] = FK.lift[F, TracedT[F, _]](liftF)
+  def mapK[G[_]](fk: F ~> G): TracedT[F, _] ~> TracedT[G, _] =
+    FK.lift[TracedT[F, _], TracedT[G, _]](_.stateT.mapK(fk))
 
-  def runK(params: Traced.RunParams): TracedT[F, *] ~> F = TracedT.runK(params)
-  def traceK(operation: String, tags: Traced.Tag*): F ~> TracedT[F, *] =
-    λ[F ~> TracedT[F, *]](fa => traced(operation, tags: _*)(liftF(fa)))
+  def runK(params: Traced.RunParams): TracedT[F, _] ~> F = TracedT.runK(params)
+  def traceK(operation: String, tags: Traced.Tag*): F ~> TracedT[F, _] =
+    FK.lift[F, TracedT[F, _]](fa => traced(operation, tags*)(liftF(fa)))
 
-  implicit lazy val traced: Traced[TracedT[F, *]] = TracedT.tracedTTracedInstance[F]
+  implicit lazy val traced: Traced[TracedT[F, _]] = TracedT.tracedTTracedInstance[F]
 }

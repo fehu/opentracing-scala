@@ -31,7 +31,7 @@ object Dependencies {
     lazy val kindProjector  = "0.13.2"
     lazy val monadicFor     = "0.3.1"
 
-    lazy val akka           = "2.6.15"
+    lazy val akka           = "2.6.19"
 
     lazy val scalatest      = "3.2.12"
   }

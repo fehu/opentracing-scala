@@ -9,6 +9,7 @@ import cats.effect.std.Dispatcher
 
 import com.github.fehu.opentracing.Traced
 import com.github.fehu.opentracing.internal.{ State, TracedTFunctions, TracedTFunctionsForSync, TracedTInstances }
+import com.github.fehu.opentracing.internal.compat.FK
 
 final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal {
   def transform[G[_], B](f: StateT[F, State, A] => StateT[G, State, B]): TracedT[G, B] = copy(f(stateT))
@@ -23,10 +24,10 @@ final case class TracedT[F[_], A](stateT: StateT[F, State, A]) extends AnyVal {
 object TracedT extends TracedTInstances with TracedTFunctions {
   type Underlying[F[_], A] = StateT[F, State, A]
 
-  def dispatcher[F[_]: FlatMap](d: Dispatcher[F], params: Traced.RunParams): Dispatcher[TracedT[F, *]] =
+  def dispatcher[F[_]: FlatMap](d: Dispatcher[F], params: Traced.RunParams): Dispatcher[TracedT[F, _]] =
     new TracedTDispatcher[F](d, State.fromRunParams(params))
 
-  def dispatcher[F[_]: Async](params: Traced.RunParams): Resource[F, Dispatcher[TracedT[F, *]]] =
+  def dispatcher[F[_]: Async](params: Traced.RunParams): Resource[F, Dispatcher[TracedT[F, _]]] =
     Dispatcher[F].map(new TracedTDispatcher[F](_, State.fromRunParams(params)))
 
   private[opentracing] object AutoConvert {
@@ -35,24 +36,24 @@ object TracedT extends TracedTInstances with TracedTFunctions {
     @inline implicit def autoToStateT[F[_], A](tt: TracedT[F, A]): Underlying[F, A] = tt.stateT
     @inline implicit def autoFromStateT[F[_], A](st: Underlying[F, A]): TracedT[F, A] = new TracedT(st)
   }
-  private [opentracing] def toK[F[_]]: StateT[F, State, *] ~> TracedT[F, *] =
-    λ[StateT[F, State, *] ~> TracedT[F, *]](TracedT(_))
+  private [opentracing] def toK[F[_]]: StateT[F, State, _] ~> TracedT[F, _] =
+    FK.lift[StateT[F, State, _], TracedT[F, _]](TracedT.apply)
 
-  private [opentracing] def fromK[F[_]]: TracedT[F, *] ~> StateT[F, State, *] =
-    λ[TracedT[F, *] ~> StateT[F, State, *]](_.stateT)
+  private [opentracing] def fromK[F[_]]: TracedT[F, _] ~> StateT[F, State, _] =
+    FK.lift[TracedT[F, _], StateT[F, State, _]](_.stateT)
 }
 
 object TracedIO extends TracedTFunctionsForSync[IO] {
-  def mapIOK[F[_]: LiftIO]: TracedIO ~> TracedT[F, *] = mapK(LiftIO.liftK)
+  def mapIOK[F[_]: LiftIO]: TracedIO ~> TracedT[F, _] = mapK(LiftIO.liftK)
 
   def dispatcher(d: Dispatcher[IO], params: Traced.RunParams): Dispatcher[TracedIO] =
     new TracedTDispatcher[IO](d, State.fromRunParams(params))
 
-  def dispatcher(params: Traced.RunParams): Resource[IO, Dispatcher[TracedT[IO, *]]] =
+  def dispatcher(params: Traced.RunParams): Resource[IO, Dispatcher[TracedT[IO, _]]] =
     Dispatcher[IO].map(new TracedTDispatcher[IO](_, State.fromRunParams(params)))
 }
 
-private[opentracing] class TracedTDispatcher[F[_]: FlatMap](df: Dispatcher[F], s0: State) extends Dispatcher[TracedT[F, *]] {
+private[opentracing] class TracedTDispatcher[F[_]: FlatMap](df: Dispatcher[F], s0: State) extends Dispatcher[TracedT[F, _]] {
   def unsafeToFutureCancelable[A](fa: TracedT[F, A]): (Future[A], () => Future[Unit]) =
     df.unsafeToFutureCancelable(fa.stateT.runA(s0))
 }

@@ -1,14 +1,14 @@
 package com.github.fehu.opentracing.internal
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 
 import cats.effect.Sync
 import cats.~>
-import cats.instances.option._
-import cats.syntax.applicative._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
-import cats.syntax.traverse._
+import cats.instances.option.*
+import cats.syntax.applicative.*
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
+import cats.syntax.traverse.*
 import io.opentracing.{ Span, SpanContext, Tracer }
 
 import com.github.fehu.opentracing.Traced
@@ -54,8 +54,8 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
     def context: G[Option[SpanContext]] = f(self.context)
     def setOperation(op: String): G[Unit] = f(self.setOperation(op))
     def setTag(tag: Traced.Tag): G[Unit] = f(self.setTag(tag))
-    def setTags(tags: Traced.Tag*): G[Unit] = f(self.setTags(tags: _*))
-    def log(fields: (String, Any)*): G[Unit] = f(self.log(fields: _*))
+    def setTags(tags: Traced.Tag*): G[Unit] = f(self.setTags(tags*))
+    def log(fields: (String, Any)*): G[Unit] = f(self.log(fields*))
     def log(event: String): G[Unit] = f(self.log(event))
     def setBaggageItem(key: String, value: String): G[Unit] = f(self.setBaggageItem(key, value))
     def getBaggageItem(key: String): G[Option[String]] = f(self.getBaggageItem(key))

@@ -1,19 +1,44 @@
 // scalac plugin has its own version
 
-val scala212 = "2.12.14"
+val scala212 = "2.12.16"
 val scala213 = "2.13.8"
+val scala3   = "3.1.3"
 
-ThisBuild / crossScalaVersions := List(scala212, scala213)
+ThisBuild / crossScalaVersions := List(scala212, scala213, scala3)
 ThisBuild / scalaVersion       := scala213
 ThisBuild / version            := "0.7.0-SNAPSHOT"
 ThisBuild / organization       := "com.github.fehu"
 
-inThisBuild(Seq(
-  addCompilerPlugin(Dependencies.`kind-projector`),
-  addCompilerPlugin(Dependencies.`monadic-for`),
-  Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:higherKinds"),
-  Test / parallelExecution := false
-))
+ThisBuild / libraryDependencies ++= {
+  (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
+    case Some((2, 12 | 13)) =>
+      Seq(
+        Dependencies.`kind-projector`,
+        Dependencies.`monadic-for`,
+      ).map(sbt.compilerPlugin)
+    case Some((3, _)) =>
+      Seq()
+  }
+}
+
+ThisBuild / Compile / scalacOptions ++= Seq(
+  "-feature",
+  "-deprecation",
+) ++ {
+  (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
+    case Some((3, _)) => Seq(
+      "-Ykind-projector:underscores",
+      "-source:future",
+    )
+    case Some((2, 12 | 13)) => Seq(
+      "-language:higherKinds",
+      "-Xsource:3",
+      "-P:kind-projector:underscore-placeholders"
+    )
+  }
+}
+
+ThisBuild / Test / parallelExecution := false
 
 lazy val root = (project in file("."))
   .settings(

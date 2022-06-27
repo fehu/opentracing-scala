@@ -3,20 +3,20 @@ package com.github.fehu.opentracing
 import java.util.concurrent.Executors
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 import cats.effect.{ Async, Sync, Temporal }
 import cats.effect.std.Dispatcher
-import cats.effect.syntax.async._
-import cats.effect.syntax.concurrent._
-import cats.syntax.apply._
-import cats.syntax.applicativeError._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.effect.syntax.async.*
+import cats.effect.syntax.concurrent.*
+import cats.syntax.apply.*
+import cats.syntax.applicativeError.*
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
 import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 
-import com.github.fehu.opentracing.syntax._
+import com.github.fehu.opentracing.syntax.*
 import com.github.fehu.opentracing.util.ErrorLogger
 
 @Ignore

@@ -5,12 +5,13 @@ import cats.{Applicative, Defer, ~>}
 import io.opentracing.SpanContext
 
 import com.github.fehu.opentracing.Traced
+import com.github.fehu.opentracing.internal.compat.FK
 import com.github.fehu.opentracing.propagation.Propagation
 
 protected[opentracing] class TracedStub[F[_]](implicit A: Applicative[F], D: Defer[F]) extends TracedInterfaceStub[F] with Traced[F] {
   def pure[A](a: A): F[A] = A.pure(a)
   def defer[A](fa: => F[A]): F[A] = D.defer(fa)
-  def currentSpan: Traced.SpanInterface[F] = new SpanInterfaceStub(A.unit, λ[cats.Id ~> F](A.pure(_)))
+  def currentSpan: Traced.SpanInterface[F] = new SpanInterfaceStub(A.unit, FK.lift[cats.Id, F](A.pure))
   def forceCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]] = A.pure(currentSpan)
   def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]] = A.pure(currentSpan)
   def injectContext(context: SpanContext): Traced.Interface[F] = new TracedInterfaceStub[F]

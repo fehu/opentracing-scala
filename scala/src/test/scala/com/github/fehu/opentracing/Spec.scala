@@ -1,6 +1,6 @@
 package com.github.fehu.opentracing
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 
 import _root_.io.opentracing.mock.{ MockSpan, MockTracer }
 import org.scalatest.{ BeforeAndAfter, BeforeAndAfterAll, Suite }

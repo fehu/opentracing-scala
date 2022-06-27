@@ -4,10 +4,11 @@ import scala.language.existentials
 
 import cats.{ Applicative, Defer, FlatMap, Functor, Monad, ~> }
 import cats.effect.{ Resource, Sync }
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
 import io.opentracing.{ SpanContext, Tracer }
 
+import com.github.fehu.opentracing.internal.compat.FK
 import com.github.fehu.opentracing.internal.syntax.LowPrioritySyntax
 import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.util.ErrorLogger
@@ -15,25 +16,25 @@ import com.github.fehu.opentracing.util.ErrorLogger
 package object syntax extends LowPrioritySyntax {
 
   final implicit class TracedOps[F[_], A](fa: F[A])(implicit traced: Traced[F]) {
-    def trace(operation: String, tags: Traced.Tag*): F[A] = traced(operation, tags: _*)(fa)
+    def trace(operation: String, tags: Traced.Tag*): F[A] = traced(operation, tags*)(fa)
 
     def inject(context: SpanContext)(operation: String, tags: Traced.Tag*): F[A] =
-      traced.injectContext(context)(operation, tags: _*)(fa)
+      traced.injectContext(context)(operation, tags*)(fa)
 
     def inject(context: Option[SpanContext])(operation: String, tags: Traced.Tag*): F[A] =
-      context.map(inject(_)(operation, tags: _*)).getOrElse(fa)
+      context.map(inject(_)(operation, tags*)).getOrElse(fa)
 
     def injectFrom(carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*): F[A] =
-      traced.injectContextFrom(carrier)(operation, tags: _*)(fa)
+      traced.injectContextFrom(carrier)(operation, tags*)(fa)
 
     def injectFromOpt(carrier: Option[Propagation#Carrier])(operation: String, tags: Traced.Tag*): F[A] =
-      carrier.map(injectFrom(_)(operation, tags: _*)).getOrElse(fa)
+      carrier.map(injectFrom(_)(operation, tags*)).getOrElse(fa)
 
     def injectPropagated(carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*): F[A] =
-      traced.injectContextFrom(carrier)(operation, tags: _*)(fa)
+      traced.injectContextFrom(carrier)(operation, tags*)(fa)
 
     def injectPropagatedOpt(carrier: Option[Propagation#Carrier])(operation: String, tags: Traced.Tag*): F[A] =
-      carrier.map(injectPropagated(_)(operation, tags: _*)).getOrElse(fa)
+      carrier.map(injectPropagated(_)(operation, tags*)).getOrElse(fa)
   }
 
   sealed trait TracedFunctions {
@@ -46,7 +47,7 @@ package object syntax extends LowPrioritySyntax {
     def trace[F[_]](operation: String, tags: Traced.Tag*): TracedFunctions.Trace[F] = new TracedFunctions.Trace(operation, tags)
 
     def traceK[F[_]](operation: String, tags: Traced.Tag*)(implicit traced: Traced[F]): F ~> F =
-      λ[F ~> F](f => traced(operation, tags: _*)(f))
+      FK.lift[F, F](f => traced(operation, tags*)(f))
 
     def pure[T[_[*], *], F[_]]: TracedFunctions.Pure[F] = TracedFunctions.pureInstance.asInstanceOf[TracedFunctions.Pure[F]]
 
@@ -55,10 +56,10 @@ package object syntax extends LowPrioritySyntax {
     def delay[F[_]]: TracedFunctions.Delay[F] = TracedFunctions.delayInstance.asInstanceOf[TracedFunctions.Delay[F]]
 
     def liftK[T[_[*], *], F[_]: Applicative](implicit traced: Traced2[T, F]): F ~> T[F, *] =
-      λ[F ~> T[F, *]](f => traced.lift(f))
+      FK.lift[F, T[F, *]](f => traced.lift(f))
 
     def runK[T[_[*], *], F[_]: FlatMap](params: Traced.RunParams)(implicit traced: Traced2[T, F]): T[F, *] ~> F =
-      λ[T[F, *] ~> F](t => traced.run(t, params))
+      FK.lift[T[F, *], F](t => traced.run(t, params))
 
   }
 
@@ -67,14 +68,14 @@ package object syntax extends LowPrioritySyntax {
       def apply[C <: Propagation#Carrier](carrier: C)(implicit traced: Traced[F]): F[Option[C]] =
         traced.extractContext(carrier)
 
-      def to[P <: Propagation](propagation: P)(implicit traced: Traced[F], sync: Sync[F]): F[Option[P#Carrier]] =
+      def to[P <: Propagation](propagation: P)(implicit traced: Traced[F], sync: Sync[F]): F[Option[propagation.Carrier]] =
         for {
           carrier <- sync.delay { propagation() }
           uOpt    <- apply(carrier)
         } yield uOpt.as(carrier)
     }
     final class Trace[F[_]] private[syntax] (operation: String, tags: Seq[Traced.Tag]) {
-      def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced(operation, tags: _*)(traced.defer(traced.pure(a)))
+      def apply[A](a: => A)(implicit traced: Traced[F]): F[A] = traced(operation, tags*)(traced.defer(traced.pure(a)))
     }
     final class Pure[F[_]] private[syntax] () {
       def apply[A](a: A)(implicit traced: Traced[F]): F[A] = traced.pure(a)
@@ -108,10 +109,10 @@ package object syntax extends LowPrioritySyntax {
   final implicit class TracedResourceOps[F[_]: Monad: Defer, A](resource: Resource[F, A])
                                                                (implicit t: Traced[F]) {
     def traceLifetime(operation: String, tags: Traced.Tag*): Resource[F, A] =
-      t.spanResource(operation, tags: _*).flatMap(_ => resource)
+      t.spanResource(operation, tags*).flatMap(_ => resource)
 
     def traceUsage(operation: String, tags: Traced.Tag*): Resource[F, A] =
-      resource.flatTap(_ => t.spanResource(operation, tags: _*))
+      resource.flatTap(_ => t.spanResource(operation, tags*))
 
     def traceUsage(trace: A => Traced.Operation.Builder): Resource[F, A] =
       resource.flatTap { a => t.spanResource(trace(a))}

@@ -4,18 +4,18 @@ import akka.actor.ActorRef
 import akka.pattern
 import akka.util.Timeout
 import cats.effect.Async
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
 
 import com.github.fehu.opentracing.Traced
-import com.github.fehu.opentracing.syntax._
+import com.github.fehu.opentracing.syntax.*
 
 object AskTracing {
   class Ops[F[_]: Async: Traced](ref: ActorRef, message: Any, sender: ActorRef)
                                 (implicit timeout: Timeout) {
     def traced: F[Any] = trace0
 
-    def trace(op: String, tags: Traced.Tag*): F[Any] = trace0.trace(op, tags: _*)
+    def trace(op: String, tags: Traced.Tag*): F[Any] = trace0.trace(op, tags*)
 
     private def trace0: F[Any] =
       for {

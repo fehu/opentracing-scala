@@ -2,12 +2,12 @@ package com.github.fehu.opentracing.propagation
 
 import cats.effect.std.Dispatcher
 import cats.effect.Sync
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
 import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 
-import com.github.fehu.opentracing.syntax._
+import com.github.fehu.opentracing.syntax.*
 import com.github.fehu.opentracing.{ Spec, Traced }
 
 @Ignore

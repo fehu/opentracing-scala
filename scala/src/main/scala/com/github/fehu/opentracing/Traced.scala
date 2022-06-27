@@ -4,19 +4,19 @@ import scala.language.implicitConversions
 
 import cats.{ Show, ~> }
 import cats.effect.Resource
-import cats.syntax.show._
+import cats.syntax.show.*
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
 import com.github.fehu.opentracing.propagation.Propagation
 import com.github.fehu.opentracing.util.ErrorLogger
 import com.github.fehu.opentracing.util.FunctionK2.~~>
 
-trait Traced2[F[_[*], _], U[_]] extends Traced[F[U, *]] {
+trait Traced2[F[_[_], _], U[_]] extends Traced[F[U, _]] {
   def currentRunParams: F[U, Traced.RunParams]
   def run[A](traced: F[U, A], params: Traced.RunParams): U[A]
 
   def lift[A](ua: U[A]): F[U, A]
-  def mapK[G[_]](f: U ~> G): F[U, *] ~> F[G, *]
+  def mapK[G[_]](f: U ~> G): F[U, _] ~> F[G, _]
 }
 
 trait Traced[F[_]] extends Traced.Interface[F] {
@@ -42,8 +42,8 @@ object Traced {
     def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
     def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
 
-    final def apply[A](op: Operation)(fa: F[A]): F[A] = apply(op.operation, op.tags: _*)(fa)
-    final def spanResource[A](op: Operation): Resource[F, ActiveSpan] = spanResource(op.operation, op.tags: _*)
+    final def apply[A](op: Operation)(fa: F[A]): F[A] = apply(op.operation, op.tags*)(fa)
+    final def spanResource[A](op: Operation): Resource[F, ActiveSpan] = spanResource(op.operation, op.tags*)
 
     final def apply[A](builder: Operation.Builder)(fa: F[A]): F[A] = apply(builder(Operation))(fa)
     final def spanResource[A](builder: Operation.Builder): Resource[F, ActiveSpan] = spanResource(builder(Operation))
@@ -132,9 +132,9 @@ object Traced {
 
   class AccumulativeSpanInterface[F[_]](i: SpanInterface[F], accRev: List[SpanInterface[F] => F[Unit]]) {
     def setTag(tag: Traced.Tag): AccumulativeSpanInterface[F] = accumulate(_.setTag(tag))
-    def setTags(tags: Traced.Tag*): AccumulativeSpanInterface[F] = accumulate(_.setTags(tags: _*))
+    def setTags(tags: Traced.Tag*): AccumulativeSpanInterface[F] = accumulate(_.setTags(tags*))
 
-    def log(fields: (String, Any)*): AccumulativeSpanInterface[F] = accumulate(_.log(fields: _*))
+    def log(fields: (String, Any)*): AccumulativeSpanInterface[F] = accumulate(_.log(fields*))
     def log(event: String): AccumulativeSpanInterface[F] = accumulate(_.log(event))
 
     def noop: AccumulativeSpanInterface[F] = this
@@ -152,12 +152,12 @@ object Traced {
 
     def setTags(tags: Traced.Tag*): AccumulativeSpanInterface ~~> AccumulativeSpanInterface =
       new (AccumulativeSpanInterface ~~> AccumulativeSpanInterface) {
-        def apply[A[_]](fa: AccumulativeSpanInterface[A]): AccumulativeSpanInterface[A] = fa.setTags(tags: _*)
+        def apply[A[_]](fa: AccumulativeSpanInterface[A]): AccumulativeSpanInterface[A] = fa.setTags(tags*)
       }
 
     def log(fields: (String, Any)*): AccumulativeSpanInterface ~~> AccumulativeSpanInterface =
       new (AccumulativeSpanInterface ~~> AccumulativeSpanInterface) {
-        def apply[A[_]](fa: AccumulativeSpanInterface[A]): AccumulativeSpanInterface[A] = fa.log(fields: _*)
+        def apply[A[_]](fa: AccumulativeSpanInterface[A]): AccumulativeSpanInterface[A] = fa.log(fields*)
       }
 
     def log(event: String): AccumulativeSpanInterface ~~> AccumulativeSpanInterface =
@@ -200,9 +200,12 @@ object Traced {
 
   final class Hooks(
     val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
-    val justAfterStart: SpanInterface ~~> λ[F[_] => List[SpanInterface[F] => F[Unit]]],
-    val beforeStop: SpanInterface ~~> λ[F[_] => Option[Throwable] => List[SpanInterface[F] => F[Unit]]]
+    val justAfterStart: SpanInterface ~~> JustAfterStartRhs,
+    val beforeStop: SpanInterface ~~> BeforeStopRhs
   )
+
+  type JustAfterStartRhs[F[_]] = List[SpanInterface[F] => F[Unit]]
+  type BeforeStopRhs[F[_]] = Option[Throwable] => List[SpanInterface[F] => F[Unit]]
 
   object Hooks {
     def apply(
@@ -216,7 +219,7 @@ object Traced {
       new Hooks(
         Option(beforeStart).getOrElse(locally),
         accumulateK2 compose justAfterStart1 compose accumulativeSpanInterfaceK2,
-        new (SpanInterface ~~> λ[F[_] => Option[Throwable] => List[SpanInterface[F] => F[Unit]]]) {
+        new (SpanInterface ~~> BeforeStopRhs) {
           def apply[A[_]](fa: SpanInterface[A]): Option[Throwable] => List[SpanInterface[A] => A[Unit]] =
             e => beforeStop1(e)(new AccumulativeSpanInterface(fa, Nil)).accumulated
         }
@@ -228,8 +231,8 @@ object Traced {
         def apply[A[_]](fa: SpanInterface[A]): AccumulativeSpanInterface[A] = new AccumulativeSpanInterface(fa, Nil)
       }
 
-    lazy val accumulateK2: AccumulativeSpanInterface ~~> λ[F[_] => List[SpanInterface[F] => F[Unit]]] =
-      new (AccumulativeSpanInterface ~~> λ[F[_] => List[SpanInterface[F] => F[Unit]]]) {
+    lazy val accumulateK2: AccumulativeSpanInterface ~~> JustAfterStartRhs =
+      new (AccumulativeSpanInterface ~~> JustAfterStartRhs) {
         def apply[A[_]](fa: AccumulativeSpanInterface[A]): List[SpanInterface[A] => A[Unit]] = fa.accumulated
       }
   }
