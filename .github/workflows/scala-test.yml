@@ -1,10 +1,17 @@
 name: Scala CI - Test
 
 on:
+  # TODO: reduce duplication
   push:
     branches: [ "master" ]
+    paths:
+      - '**.scala'
+      - '**.sbt'
   pull_request:
     branches: [ "master" ]
+    paths:
+      - '**.scala'
+      - '**.sbt'
 
 permissions:
   contents: read
