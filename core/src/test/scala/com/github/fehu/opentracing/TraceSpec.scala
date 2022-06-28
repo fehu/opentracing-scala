@@ -96,7 +96,7 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
 
   "Trace when starting and joining fiber" in dispatcher.unsafeRunSync {
     val f1 = Sync[F].delay(()).trace("f1")
-    val f2 = Temporal[F].sleep(10.millis).trace("f2")
+    val f2 = Temporal[F].sleep(40.millis).trace("f2")
     val f3 = Sync[F].delay(()).trace("f3")
     val f4 = Sync[F].delay(()).trace("f4")
     val f5 = Sync[F].delay(()).trace("f5")
@@ -168,14 +168,14 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
     val f4 = Sync[F].delay(()).trace("f4")
     val f5 = Temporal[F].sleep(50.millis).trace("f5-1") *> Temporal[F].sleep(50.millis).trace("f5-2")
     val f6 = Sync[F].delay(()).trace("f6")
-    val f7 = Temporal[F].sleep(50.millis).trace("f7-1") *> Temporal[F].sleep(50.millis).trace("f7-2")
+    val f7 = Temporal[F].sleep(10.millis).trace("f7-1") *> Temporal[F].sleep(10.millis).trace("f7-2")
     val f8 = Sync[F].delay(()).trace("f8")
     val f = (f1 *>
              Temporal[F].timeoutTo(f2, 40.millis, f3).trace("t1") *>
              f4 *>
              Temporal[F].timeout(f5, 40.millis).trace("t2").attempt *>
              f6 *>
-             Temporal[F].timeoutAndForget(f7, 40.millis).trace("t3").attempt *>
+             Temporal[F].timeout(f7, 40.millis).trace("t3").attempt *>
              f8
             ).trace("f")
 
@@ -190,8 +190,9 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
         TestedSpan(operationName = "t2",   spanId = 7,  parentId = 6),
         TestedSpan(operationName = "f6",   spanId = 9,  parentId = 6),
         TestedSpan(operationName = "f7-1", spanId = 11, parentId = 10),
+        TestedSpan(operationName = "f7-2", spanId = 12, parentId = 11),
         TestedSpan(operationName = "t3",   spanId = 10, parentId = 9),
-        TestedSpan(operationName = "f8",   spanId = 12, parentId = 9),
+        TestedSpan(operationName = "f8",   spanId = 13, parentId = 10),
         TestedSpan(operationName = "f",    spanId = 1,  parentId = 0),
       )
     }
