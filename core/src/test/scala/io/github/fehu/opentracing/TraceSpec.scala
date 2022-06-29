@@ -108,17 +108,28 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
               .productR(f5)
               .trace("f")
     f.map { _ =>
-      finishedSpans() shouldBe Seq(
-        TestedSpan(operationName = "f1",  spanId = 4, parentId = 3),
-        TestedSpan(operationName = "f3",  spanId = 5, parentId = 4),
-        TestedSpan(operationName = "fff", spanId = 3, parentId = 2),
-        TestedSpan(operationName = "f2",  spanId = 6, parentId = 4),
-        TestedSpan(operationName = "f4",  spanId = 7, parentId = 4),
-        TestedSpan(operationName = "ff",  spanId = 2, parentId = 1),
-        TestedSpan(operationName = "f5",  spanId = 8, parentId = 7),
-        TestedSpan(operationName = "f",   spanId = 1, parentId = 0),
-      )
-    }
+      finishedSpans() should (
+        equal(Seq(
+          TestedSpan(operationName = "f1",  spanId = 4, parentId = 3),
+          TestedSpan(operationName = "f3",  spanId = 5, parentId = 4), // <- the difference
+          TestedSpan(operationName = "fff", spanId = 3, parentId = 2),
+          TestedSpan(operationName = "f2",  spanId = 6, parentId = 4), // <- the difference
+          TestedSpan(operationName = "f4",  spanId = 7, parentId = 4),
+          TestedSpan(operationName = "ff",  spanId = 2, parentId = 1),
+          TestedSpan(operationName = "f5",  spanId = 8, parentId = 7),
+          TestedSpan(operationName = "f",   spanId = 1, parentId = 0),
+        )) or
+        equal(Seq(
+          TestedSpan(operationName = "f1",  spanId = 4, parentId = 3),
+          TestedSpan(operationName = "f3",  spanId = 6, parentId = 4), // <- the difference
+          TestedSpan(operationName = "fff", spanId = 3, parentId = 2),
+          TestedSpan(operationName = "f2",  spanId = 5, parentId = 4), // <- the difference
+          TestedSpan(operationName = "f4",  spanId = 7, parentId = 4),
+          TestedSpan(operationName = "ff",  spanId = 2, parentId = 1),
+          TestedSpan(operationName = "f5",  spanId = 8, parentId = 7),
+          TestedSpan(operationName = "f",   spanId = 1, parentId = 0),
+        ))
+      )}
   }
 
   "Trace running in background" in dispatcher.unsafeRunSync {
