@@ -1,8 +1,8 @@
 package io.github.fehu.opentracing.syntax
 
-import _root_.fs2.Stream
 import cats.effect.MonadCancelThrow
 import cats.syntax.apply.*
+import fs2.Stream
 import io.opentracing.SpanContext
 
 import io.github.fehu.opentracing.Traced

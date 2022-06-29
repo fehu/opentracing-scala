@@ -2,7 +2,7 @@ package io.github.fehu.opentracing
 
 import scala.collection.JavaConverters.*
 
-import _root_.io.opentracing.mock.{ MockSpan, MockTracer }
+import io.opentracing.mock.{ MockSpan, MockTracer }
 import org.scalatest.{ BeforeAndAfter, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.should.Matchers
 
