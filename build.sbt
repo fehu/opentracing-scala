@@ -7,7 +7,7 @@ val scala3   = "3.1.3"
 ThisBuild / crossScalaVersions := List(scala212, scala213, scala3)
 ThisBuild / scalaVersion       := scala213
 ThisBuild / version            := "0.7.0-SNAPSHOT"
-ThisBuild / organization       := "com.github.fehu"
+ThisBuild / organization       := "io.github.fehu"
 
 ThisBuild / libraryDependencies ++= {
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {

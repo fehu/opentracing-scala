@@ -1,4 +1,4 @@
 <plugin>
     <name>TracingImplicitSearch</name>
-    <classname>com.github.fehu.opentracing.compile.ImplicitSearchTracingPlugin</classname>
+    <classname>io.github.fehu.opentracing.compile.ImplicitSearchTracingPlugin</classname>
 </plugin>
