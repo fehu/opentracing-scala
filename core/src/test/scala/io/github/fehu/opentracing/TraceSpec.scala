@@ -110,9 +110,9 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
     f.map { _ =>
       finishedSpans() shouldBe Seq(
         TestedSpan(operationName = "f1",  spanId = 4, parentId = 3),
-        TestedSpan(operationName = "f3",  spanId = 6, parentId = 4),
+        TestedSpan(operationName = "f3",  spanId = 5, parentId = 4),
         TestedSpan(operationName = "fff", spanId = 3, parentId = 2),
-        TestedSpan(operationName = "f2",  spanId = 5, parentId = 4),
+        TestedSpan(operationName = "f2",  spanId = 6, parentId = 4),
         TestedSpan(operationName = "f4",  spanId = 7, parentId = 4),
         TestedSpan(operationName = "ff",  spanId = 2, parentId = 1),
         TestedSpan(operationName = "f5",  spanId = 8, parentId = 7),
