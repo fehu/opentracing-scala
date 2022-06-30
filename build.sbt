@@ -8,6 +8,7 @@ ThisBuild / crossScalaVersions := List(scala212, scala213, scala3)
 ThisBuild / scalaVersion       := scala213
 ThisBuild / version            := "0.7.0-SNAPSHOT"
 ThisBuild / organization       := "io.github.fehu"
+ThisBuild / versionScheme      := Some("semver-spec")
 
 ThisBuild / libraryDependencies ++= {
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
@@ -107,11 +108,22 @@ lazy val testDependencies = Seq(
 
 ThisBuild / Test / parallelExecution := false
 
-// // //
+// // // Compiler Plugin (Scala 2 only) // // //
 
 // Has its own configuration file (and own version)
 lazy val compilerPlugin = project in file("compiler-plugin") settings (
-  crossScalaVersions := List(scala212, scala213)
+  crossScalaVersions := List(scala212, scala213),
+  crossVersion := CrossVersion.full
 )
 
+// // // Misc // // //
+
 addCommandAlias("fullDependencyUpdates", ";dependencyUpdates; reload plugins; dependencyUpdates; reload return")
+
+
+// // // Publishing // // //
+
+ThisBuild / crossVersion := CrossVersion.binary
+ThisBuild / publishTo    := sonatypePublishToBundle.value
+
+// Continues at [[sonatype.sbt]]
