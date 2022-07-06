@@ -23,7 +23,7 @@ import io.opentracing.{ Span, SpanContext }
 
 import io.github.fehu.opentracing.{ Traced, Traced2 }
 import io.github.fehu.opentracing.Traced.ActiveSpan
-import io.github.fehu.opentracing.internal.compat.FK
+import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.propagation.Propagation
 import io.github.fehu.opentracing.transformer.TracedT
 import io.github.fehu.opentracing.transformer.TracedT.AutoConvert.*
@@ -127,7 +127,7 @@ private[opentracing] class TracedTTracedInstance[F[_]](implicit sync: Sync[F])
         for {
           s  <- state
           ce <- StateT liftF delay{
-                  s.tracer.extract(carrier.format, carrier.underlying)
+                  s.tracer.extract(carrier.format, carrier.underlying).nn
                 }.attempt
           _  <- StateT.liftF(ce.swap.traverse_(s.logError[F]("Failed to extract span context from carrier", _)))
         } yield ce.toOption.map(_.asRight)

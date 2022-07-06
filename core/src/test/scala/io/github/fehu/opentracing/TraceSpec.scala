@@ -16,6 +16,7 @@ import cats.syntax.functor.*
 import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 
+import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.syntax.*
 
 @Ignore
@@ -82,7 +83,7 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
     val f1 = Sync[F].delay(()).trace("f1")
     val f2 = Sync[F].delay(()).trace("f2")
     val f3 = Sync[F].delay(()).trace("f3")
-    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor().nn)
     val f = (f1 *> f2.evalOn(ec) *> f3).trace("f")
     f.map { _ =>
       finishedSpans() shouldBe Seq(
@@ -100,7 +101,7 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
     val f3 = Sync[F].delay(()).trace("f3")
     val f4 = Sync[F].delay(()).trace("f4")
     val f5 = Sync[F].delay(()).trace("f5")
-    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor().nn)
     val f = (f1 *> f2.startOn(ec) <* f3)
               .trace("fff")
               .flatMap(_.join *> f4)
@@ -138,7 +139,7 @@ abstract class TraceSpec[F[_]: Async: Traced] extends AnyFreeSpec with Spec {
     val f3 = Sync[F].delay(()).trace("f3")
     val f4 = Sync[F].delay(()).trace("f4")
     val f5 = Sync[F].delay(()).trace("f5")
-    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor().nn)
     val f = (f1 *> (f2 *> f3).backgroundOn(ec).use(_ <* f4).trace("ff") <* f5).trace("f")
     f.map { _ =>
       finishedSpans() shouldBe Seq(

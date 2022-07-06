@@ -29,6 +29,8 @@ ThisBuild / Compile / scalacOptions ++= Seq(
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
     case Some((3, _)) => Seq(
       "-Ykind-projector:underscores",
+      "-Yexplicit-nulls",
+      "-Ysafe-init",
       "-source:future",
     )
     case Some((2, 12 | 13)) => Seq(

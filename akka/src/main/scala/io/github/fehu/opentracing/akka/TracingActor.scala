@@ -3,6 +3,7 @@ package io.github.fehu.opentracing.akka
 import akka.fehu.MessageInterceptingActor
 import io.opentracing.{ Span, SpanContext, Tracer }
 
+import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.Traced
 
 final case class TracedMessage[A](message: A, spanContext: Option[SpanContext])
@@ -48,13 +49,13 @@ object TracingActor {
 
     object buildSpan {
       def apply[A](op: String, tags: Traced.Tag*): Tracer.SpanBuilder = {
-        val b0 = tracer.buildSpan(op).ignoreActiveSpan
+        val b0 = tracer.buildSpan(op).nn.ignoreActiveSpan.nn
         tags.foldLeft(b0)((b, t) => t.apply(b))
       }
     }
 
     override protected def onSpanReceived(message: Any, ctx: SpanContext): Unit = {
-      _span = Some(buildChildSpan(message).asChildOf(ctx).start())
+      _span = Some(buildChildSpan(message).asChildOf(ctx).nn.start().nn)
       super.onSpanReceived(message, ctx)
     }
 
@@ -68,8 +69,8 @@ object TracingActor {
 
   trait AlwaysChildSpan extends ChildSpan {
     override protected def onNoSpanReceived(message: Any): Unit = {
-      val span = buildChildSpan(message).start()
-      setSpanContext(span.context())
+      val span = buildChildSpan(message).start().nn
+      setSpanContext(span.context().nn)
       super.onNoSpanReceived(message)
     }
   }

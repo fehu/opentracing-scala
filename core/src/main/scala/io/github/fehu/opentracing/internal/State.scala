@@ -12,6 +12,7 @@ import cats.syntax.traverse.*
 import io.opentracing.{ Span, SpanContext, Tracer }
 
 import io.github.fehu.opentracing.Traced
+import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.util.ErrorLogger
 
 final case class State(
@@ -36,7 +37,7 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
 
   private def delay[R](f: Span => R): F[Option[R]] = fOpt.flatMap(_.traverse{ span => sync.delay(f(span)) })
 
-  def context: F[Option[SpanContext]] = delay(_.context())
+  def context: F[Option[SpanContext]] = delay(_.context().nn)
 
   def setOperation(op: String): F[Unit] = delay(_.setOperationName(op)).void
 
@@ -51,7 +52,7 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
 
   def setBaggageItem(key: String, value: String): F[Unit] = delay(_.setBaggageItem(key, value)).void
 
-  def getBaggageItem(key: String): F[Option[String]] = delay(_.getBaggageItem(key))
+  def getBaggageItem(key: String): F[Option[String]] = delay(_.getBaggageItem(key).nn)
 
   def mapK[G[_]](f: F ~> G): Traced.SpanInterface[G] = new Traced.SpanInterface[G] {
     def context: G[Option[SpanContext]] = f(self.context)
