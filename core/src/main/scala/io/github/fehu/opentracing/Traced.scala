@@ -12,12 +12,12 @@ import io.github.fehu.opentracing.propagation.Propagation
 import io.github.fehu.opentracing.util.ErrorLogger
 import io.github.fehu.opentracing.util.FunctionK2.~~>
 
-trait Traced2[F[_[_], _], U[_]] extends Traced[F[U, _]] {
-  def currentRunParams: F[U, Traced.RunParams]
-  def run[A](traced: F[U, A], params: Traced.RunParams): U[A]
+trait Traced2[T[_[_], _], F[_]] extends Traced[T[F, _]] {
+  def currentRunParams: T[F, Traced.RunParams]
+  def run[A](traced: T[F, A], params: Traced.RunParams): F[A]
 
-  def lift[A](ua: U[A]): F[U, A]
-  def mapK[G[_]](f: U ~> G): F[U, _] ~> F[G, _]
+  def lift[A](ua: F[A]): T[F, A]
+  def mapK[G[_]](f: F ~> G): T[F, _] ~> T[G, _]
 }
 
 trait Traced[F[_]] extends Traced.Interface[F] {
