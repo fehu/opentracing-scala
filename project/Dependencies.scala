@@ -7,6 +7,7 @@ object Dependencies {
 
   lazy val `opentracing-api`  = "io.opentracing"   % "opentracing-api"  % Version.opentracing
   lazy val `opentracing-mock` = "io.opentracing"   % "opentracing-mock" % Version.opentracing
+  lazy val `opentracing-noop` = "io.opentracing"   % "opentracing-noop" % Version.opentracing
   lazy val `jaeger-client`    = "io.jaegertracing" % "jaeger-client"    % Version.jaegerClient
 
   lazy val `cats-core`        = "org.typelevel"  %% "cats-core"        % Version.cats
@@ -22,17 +23,17 @@ object Dependencies {
 
   object Version {
     lazy val opentracing    = "0.33.0"
-    lazy val jaegerClient   = "1.5.0"
+    lazy val jaegerClient   = "1.8.0"
 
-    lazy val cats           = "2.6.1"
-    lazy val catsEffect     = "2.5.1"
-    lazy val fs2            = "2.5.9"
+    lazy val cats           = "2.8.0"
+    lazy val catsEffect     = "3.3.12"
+    lazy val fs2            = "3.2.8"
 
-    lazy val kindProjector  = "0.13.0"
+    lazy val kindProjector  = "0.13.2"
     lazy val monadicFor     = "0.3.1"
 
-    lazy val akka           = "2.6.15"
+    lazy val akka           = "2.6.19"
 
-    lazy val scalatest      = "3.2.9"
+    lazy val scalatest      = "3.2.12"
   }
 }

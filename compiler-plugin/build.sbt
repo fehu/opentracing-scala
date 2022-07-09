@@ -1,6 +1,4 @@
-name := "opentracing-jaeger-scalac-implicits"
-
-version := "0.1.3"
+name := "opentracing-scalac-implicits-jaeger"
 
 libraryDependencies ++= Seq(
   Dependencies.`scala-compiler`.value,
@@ -12,6 +10,18 @@ libraryDependencies ++= Seq(
 
 enablePlugins(AssemblyPlugin)
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(true)
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", _*)            => MergeStrategy.discard
+  case PathList("rootdoc.txt")             => MergeStrategy.discard
+  case PathList("javax", "annotation", _*) => MergeStrategy.first
+  case _                                   => MergeStrategy.singleOrError
+}
 
-packageBin in Compile := (assembly in Compile).value
+Compile / packageBin := (Compile / assembly).value
+
+// // // Release // // //
+
+crossVersion := CrossVersion.full
+
+releaseTagName := s"plugin-v${version.value}"

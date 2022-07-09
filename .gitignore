@@ -1,5 +1,7 @@
 *.class
 *.log
+.bsp/
+scripts/.scala-build/
 target/
 
 # Intellij Idea

@@ -1,56 +1,107 @@
 # opentracing-scala
 
-Functional interface for opentracing and an implementation, based on `cats.data.StateT`.
+Functional interface for opentracing and its implementation, based on `cats.data.StateT`.
 
---------------------------------
+# `opentracing-scala-core`
 
-Tracing monad is defined over type constructor `T[_[*], *]`, that wraps the underlying monad.
-But its interface is separated into two typeclasses.
+Requires `cats-effect` **3**.
 
-`Traced[F[_]]` ignores underlying type constructor and defines most operations:
+Supports scala `2.12`, `2.13` and `3.1`.
+
+### `Traced[F[_]]` typeclass
+[Code](core/src/main/scala/io/github/fehu/opentracing/Traced.scala)
+
+- Lifting values and effects through `pure` and `defer`.
+- Creating new spans (`extends Traced.Interface[F]`)
 ```scala
-  def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
-  def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
-    
-  def pure[A](a: A): F[A]
-  def defer[A](fa: => F[A]): F[A]
-  
-  def currentSpan: Traced.SpanInterface[F]
-  
+    def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
+    def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
+
+    def withParent(span: ActiveSpan | SpanContext): Interface[F]
+    def withoutParent: Interface[F]
+```
+- Accessing `currentSpan` through `Traced.SpanInterface[F]`
+```scala
+    def context: F[Option[SpanContext]]
+
+    def setOperation(op: String): F[Unit]
+    def setTag(tag: Traced.Tag): F[Unit]
+    def setTags(tags: Traced.Tag*): F[Unit]
+
+    def log(fields: (String, Any)*): F[Unit]
+    def log(event: String): F[Unit]
+
+    def setBaggageItem(key: String, value: String): F[Unit]
+    def getBaggageItem(key: String): F[Option[String]]
+```
+- Setting current span
+```scala
+  def forceCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
+  /** Sets `active` span if no other is set. */
+  def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
+```
+- Transferring span context
+```scala
   def injectContext(context: SpanContext): Traced.Interface[F]
-  def injectContextFrom[C](carrier: C, format: Format[C]): Traced.Interface[F]
-  
-  def extractContext[C0 <: C, C](carrier: C0, format: Format[C]): F[Option[C0]] 
+  def injectContextFrom(carrier: Propagation#Carrier): Traced.Interface[F]
+  def extractContext[C <: Propagation#Carrier](carrier: C): F[Option[C]]
 ```
 
-`Traced2[T[_[*], *], F[_]]` refines operations, that require knowing underlying functor:
-```scala
-  def currentRunParams: F[U, Traced.RunParams]
-  def run[A](traced: F[U, A], params: Traced.RunParams): U[A]
-  
-  def lift[A](ua: U[A]): F[U, A]
-  def mapK[G[_]](f: U ~> G): F[U, *] ~> F[G, *]
-``` 
+### `Traced2[T[_[_], _], F[_]]` typeclass
+`extends Traced[T[F, _]]`
 
-### Traced Transformer
-
-Implementation using cats' state transformer.
+Defines tracing over transformer `T[F, _]`, allowing to run and lift `T[F, _] <~> F`
 ```scala
-  type TracedT[F[_], A] = StateT[F, State, A]
+  def currentRunParams: T[F, Traced.RunParams]
+  def run[A](traced: T[F, A], params: Traced.RunParams): F[A]
+
+  def lift[A](ua: F[A]): T[F, A]
+  def mapK[G[_]](f: F ~> G): T[F, _] ~> T[G, _]
 ```
 
-Provides (experimental) instances of `Sync` and `ConcurrentEffect`.
+**Running** the transformer requires
+- currently active span
+- setup
+  - tracer
+  - `beforeStart`, `justAfterStart`, `beforeStop` hooks (`Traced.Hooks`)
+  - error logger
 
-# opentracing-jaeger-scalac-implicits
+Default setups can be obtained at `Traced.Setup.default(_: Tracer)` or
+- `Jaeger` (in `opentracing-scala-jaeger`) module
+- `NoOp` (in `opentracing-scala-noop`) module
+
+### Propagation
+Support for
+- `BinaryPropagation`
+- `TextMapPropagation`
+
+### Syntax
+`import io.github.fehu.opentracing.syntax._`
+
+_TODO_
+
+## `TracedT[F[_], A]`
+Traced transformer implementation with underlying `cats.data.StateT`.
+
+Provides instances of most `cats.effect` typeclasses and a `Dispatcher` for `TracedT[IO, A]`.
+
+# `opentracing-scala-*`
+Other modules:
+- `opentracing-scala-akka` - `TracingActor` and `ask(actor, message).trace(...)` syntax.
+- `opentracing-scala-fs2` - Syntax extensions for fs2 at `io.github.fehu.opentracing.syntax.FS2`.
+- `opentracing-scala-jaeger` - Setup helper for `io.jaegertracing`.
+- `opentracing-scala-noop` - No-op setup.
+
+# `opentracing-scalac-implicits-jaeger` (Scala 2 only)
 
 **Compiler plugin** that traces _implicit searches_ performed by scalac
 and reports them to local jaegertracing backend.
 
 
-#### Usage 
+#### Usage
 - Put to your `build.sbt`
     ```sbtshell
-    addCompilerPlugin("com.github.fehu" %% "opentracing-jaeger-scalac-implicits" % "0.1.3")
+    addCompilerPlugin("io.github.fehu" %% "opentracing-jaeger-scalac-implicits" % "0.1.3")
     ```
 - Run, for example, [all-in-one](https://www.jaegertracing.io/docs/latest/getting-started/#all-in-one) jaeger backend with docker
 - Compile your project
