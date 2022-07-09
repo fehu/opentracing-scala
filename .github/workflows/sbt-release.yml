@@ -54,7 +54,7 @@ permissions:
 jobs:
   release:
     if: ${{ inputs.step == '<none>' }}
-    name: Release ${{ inputs.module == '<none>' && 'all' || inputs.module }} - ${{ inputs.promote && 'Maven Central' || 'Sonatype Staging' }}
+    name: Release ${{ inputs.module == '<none>' && 'all' || inputs.module }} - ${{ inputs.target }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -73,7 +73,7 @@ jobs:
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      run: ./scripts/sbt-release.sh release "${{ inputs.module }}" "${{ inputs.promote }}"
+      run: ./scripts/sbt-release.sh release "${{ inputs.module }}" "${{ inputs.target }}"
     - name: Post Release
       run: ./scripts/sbt-release.sh postRelease "${{ inputs.module }}" "${{ inputs.next_version }}"
     - name: Push
@@ -102,4 +102,4 @@ jobs:
             "${{ inputs.module }}" \
             "${{ inputs.version }}" \
             "${{ inputs.next_version }}" \
-             ${{ inputs.promote }}
+             ${{ inputs.target }}
