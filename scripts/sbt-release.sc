@@ -40,7 +40,7 @@ def step(step: String, module: String, version: String, nextVersion: String, pro
 
 
 inline private def nonEmpty(s0: String, cmd: String) =
-  s0.trim.pipe(s => if s.nonEmpty then s" $cmd $s" else "")
+  s0.trim.pipe(s => if s.nonEmpty || s != "<none>" then s" $cmd $s" else "")
 
 
 inline private def runSbt(module: String, stage: String, cmds: String*): Unit =
