@@ -6,7 +6,6 @@ val scala3   = "3.1.3"
 
 ThisBuild / crossScalaVersions := List(scala212, scala213, scala3)
 ThisBuild / scalaVersion       := scala213
-ThisBuild / version            := "0.7.0-SNAPSHOT"
 ThisBuild / organization       := "io.github.fehu"
 ThisBuild / versionScheme      := Some("semver-spec")
 
@@ -49,7 +48,8 @@ def moduleName(suff: String): String = s"$namePrefix-$suff"
 
 def module(nme: String): Project =
   Project(nme, file(nme)).settings(
-    name := moduleName(nme)
+    name := moduleName(nme),
+    releaseModuleSettings
   )
 
 lazy val root = (project in file("."))
@@ -113,8 +113,8 @@ ThisBuild / Test / parallelExecution := false
 
 // Has its own configuration file (and own version)
 lazy val `compiler-plugin` = project in file("compiler-plugin") settings (
-  crossScalaVersions := List(scala212, scala213),
-  crossVersion := CrossVersion.full
+  releaseCommonSettings,
+  crossScalaVersions := List(scala212, scala213)
 )
 
 // // // Misc // // //
@@ -125,6 +125,62 @@ addCommandAlias("fullDependencyUpdates", ";dependencyUpdates; reload plugins; de
 // // // Publishing // // //
 
 ThisBuild / crossVersion := CrossVersion.binary
-ThisBuild / publishTo    := sonatypePublishToBundle.value
 
 // Continues at [[sonatype.sbt]]
+
+// // // Release // // //
+
+ThisBuild / releaseVerFile := (root / releaseVersionFile).value
+
+lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
+  publishTo         := sonatypePublishToBundle.value,
+  releaseCrossBuild := true,
+  releaseProcess    := stages.value(releaseStage.value),
+  releasePromote    := false,
+  releaseStage      := "check"
+)
+
+lazy val releaseModuleSettings: Def.SettingsDefinition = Seq(
+  releaseVersionFile := releaseVerFile.value
+)
+
+
+lazy val releasePromote = Def.settingKey[Boolean]("Publish only to sonatype staging")
+lazy val releaseStage   = Def.settingKey[String]("Release stage")
+lazy val releaseVerFile = Def.settingKey[File]("Common version file")
+
+
+import ReleaseTransformations._
+
+lazy val stages: Def.Initialize[Map[String, Seq[ReleaseStep]]] = Def.setting(Map(
+  "check" -> Seq(
+    checkSnapshotDependencies,
+    inquireVersions
+  ),
+  "test" -> Seq(
+    runClean,
+    runTest
+  ),
+  "pre-release" -> Seq(
+    inquireVersions,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease
+  ),
+  "release" -> {
+    val releaseOpt =
+      if (releasePromote.value)
+        Some[ReleaseStep](releaseStepCommand("sonatypeBundleRelease"))
+      else None
+
+    Seq[ReleaseStep](releaseStepCommandAndRemaining("+publishSigned")) ++ releaseOpt.toSeq
+  },
+  "post-release" -> Seq(
+    inquireVersions,
+    setNextVersion,
+    commitNextVersion
+  ),
+  "push" -> Seq(
+    pushChanges
+  )
+))

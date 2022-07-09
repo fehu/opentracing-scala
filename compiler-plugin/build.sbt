@@ -1,7 +1,5 @@
 name := "opentracing-scalac-implicits-jaeger"
 
-version := "0.1.4-SNAPSHOT"
-
 libraryDependencies ++= Seq(
   Dependencies.`scala-compiler`.value,
   Dependencies.`jaeger-client`
@@ -21,3 +19,9 @@ assembly / assemblyMergeStrategy := {
 }
 
 Compile / packageBin := (Compile / assembly).value
+
+// // // Release // // //
+
+crossVersion := CrossVersion.full
+
+releaseTagName := s"plugin-v${version.value}"
