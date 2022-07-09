@@ -1,4 +1,4 @@
-name: SBT CI - Release
+name: SBT / Scala - Release
 
 on:
   workflow_dispatch:

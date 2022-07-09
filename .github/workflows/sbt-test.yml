@@ -1,4 +1,4 @@
-name: Scala CI - Test
+name: SBT / Scala - Test
 
 on:
   # TODO: reduce duplication
