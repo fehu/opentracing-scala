@@ -63,22 +63,22 @@ jobs:
       with:
         jvm: adopt:11
     - name: Check
-      run: sh scripts/sbt-release.sh check "${{ inputs.module }}"
+      run: ./scripts/sbt-release.sh check "${{ inputs.module }}"
     - name: Test
-      run: sh scripts/sbt-release.sh test "${{ inputs.module }}"
+      run: ./scripts/sbt-release.sh test "${{ inputs.module }}"
     - name: Pre Release
-      run: sh scripts/sbt-release.sh preRelease "${{ inputs.module }}" "${{ inputs.version }}"
+      run: ./scripts/sbt-release.sh preRelease "${{ inputs.module }}" "${{ inputs.version }}"
     - name: Release
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      run: sh scripts/sbt-release.sh release "${{ inputs.module }}" "${{ inputs.promote }}"
+      run: ./scripts/sbt-release.sh release "${{ inputs.module }}" "${{ inputs.promote }}"
     - name: Post Release
-      run: sh scripts/sbt-release.sh postRelease "${{ inputs.module }}" "${{ inputs.next_version }}"
+      run: ./scripts/sbt-release.sh postRelease "${{ inputs.module }}" "${{ inputs.next_version }}"
     - name: Push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: sh scripts/sbt-release.sh push "${{ inputs.module }}"
+      run: ./scripts/sbt-release.sh push "${{ inputs.module }}"
 
   releaseStep:
     if: ${{ inputs.step != '<none>' }}
@@ -92,7 +92,7 @@ jobs:
           jvm: adopt:11
       - name: ${{ inputs.step }}
         run: |
-          sh scripts/sbt-release.sh step \
+          ./scripts/sbt-release.sh step \
             "${{ inputs.step }}" \
             "${{ inputs.module }}" \
             "${{ inputs.version }}" \
