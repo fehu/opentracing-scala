@@ -58,22 +58,22 @@ jobs:
       with:
         jvm: adopt:11
     - name: Check
-      run: scala-cli run scripts/sbt-release.sc --main-class check
+      run: scala-cli run scripts/sbt-release.sc --main-class check -- "${{ inputes.module }}" 
     - name: Test
-      run: scala-cli run scripts/sbt-release.sc --main-class test
+      run: scala-cli run scripts/sbt-release.sc --main-class test -- "${{ inputes.module }}" 
     - name: Pre Release
-      run: scala-cli run scripts/sbt-release.sc --main-class preRelease -- "${{ inputs.version }}"
+      run: scala-cli run scripts/sbt-release.sc --main-class preRelease -- "${{ inputes.module }}" "${{ inputs.version }}"
     - name: Release
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      run: scala-cli run scripts/sbt-release.sc --main-class release -- "${{ inputs.promote }}"
+      run: scala-cli run scripts/sbt-release.sc --main-class release -- "${{ inputes.module }}" "${{ inputs.promote }}"
     - name: Post Release
-      run: scala-cli run scripts/sbt-release.sc --main-class postRelease -- "${{ inputs.next_version }}"
+      run: scala-cli run scripts/sbt-release.sc --main-class postRelease -- "${{ inputes.module }}" "${{ inputs.next_version }}"
     - name: Push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: scala-cli run scripts/sbt-release.sc --main-class push
+      run: scala-cli run scripts/sbt-release.sc --main-class push "${{ inputes.module }}" 
 
   releaseStep:
     if: ${{ inputs.step != '<none>' }}
