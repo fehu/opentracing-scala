@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 MAIN=$1
 shift 1
 args=( "$@" )
