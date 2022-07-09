@@ -55,6 +55,7 @@ def module(nme: String): Project =
 lazy val root = (project in file("."))
   .settings(
     name := namePrefix,
+    releaseCommonSettings,
     publish / skip := true
   )
   .aggregate(core, akka, fs2, noop, jaeger)
