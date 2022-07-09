@@ -58,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - uses: git-actions/set-user@v1.0.0
     - uses: coursier/cache-action@v6.3
     - uses: VirtusLab/scala-cli-setup@main
       with:
@@ -76,8 +77,8 @@ jobs:
     - name: Post Release
       run: ./scripts/sbt-release.sh postRelease "${{ inputs.module }}" "${{ inputs.next_version }}"
     - name: Push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: ./scripts/sbt-release.sh push "${{ inputs.module }}"
 
   releaseStep:
@@ -86,11 +87,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: git-actions/set-user@v1.0.0
       - uses: coursier/cache-action@v6.3
       - uses: VirtusLab/scala-cli-setup@main
         with:
           jvm: adopt:11
       - name: ${{ inputs.step }}
+        env:
+          SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           ./scripts/sbt-release.sh step \
             "${{ inputs.step }}" \
