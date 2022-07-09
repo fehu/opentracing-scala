@@ -43,21 +43,24 @@ ThisBuild / Compile / scalacOptions ++= Seq(
 
 // // // Modules // // //
 
-def moduleName(suff: String): String = {
-  val suff1 = if (suff.nonEmpty) s"-$suff" else suff
-  s"opentracing-scala$suff1"
-}
+val namePrefix = "opentracing-scala"
+
+def moduleName(suff: String): String = s"$namePrefix-$suff"
+
+def module(nme: String): Project =
+  Project(nme, file(nme)).settings(
+    name := moduleName(nme)
+  )
 
 lazy val root = (project in file("."))
   .settings(
-    name := moduleName(""),
+    name := namePrefix,
     publish / skip := true
   )
   .aggregate(core, akka, fs2, noop, jaeger)
 
-lazy val core = (project in file("core"))
+lazy val core = module("core")
   .settings(
-    name := moduleName("core"),
     libraryDependencies ++= Seq(
       Dependencies.`opentracing-api`,
       Dependencies.`cats-core`,
@@ -72,32 +75,28 @@ lazy val core = (project in file("core"))
     }
   )
 
-lazy val akka = (project in file("akka"))
+lazy val akka = module("akka")
   .settings(
-    name := moduleName("akka"),
     libraryDependencies += Dependencies.`akka-actor`,
     libraryDependencies ++= testDependencies
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val fs2 = (project in file("fs2"))
+lazy val fs2 = module("fs2")
   .settings(
-    name := moduleName("fs2"),
     libraryDependencies += Dependencies.`fs2-core`
   )
   .dependsOn(core)
 
 // // // Backends // // //
 
-lazy val noop = (project in file("noop"))
+lazy val noop = module("noop")
   .settings(
-    name := moduleName("noop"),
     libraryDependencies += Dependencies.`opentracing-noop`
   ).dependsOn(core)
 
-lazy val jaeger = (project in file("jaeger"))
+lazy val jaeger = module("jaeger")
   .settings(
-    name := moduleName("jaeger"),
     libraryDependencies += Dependencies.`jaeger-client`
   ).dependsOn(core)
 
