@@ -11,11 +11,16 @@ on:
         description: 'Next development version'
         required: false
         type: string
-      promote:
-        description: 'Promote to release'
-        required: false
-        type: boolean
-        default: false
+      target:
+        description: 'Publish target'
+        required: true
+        type: choice
+        default: 'Staging'
+        options:
+          - 'Release'
+          - 'Promote'
+          - 'Staging'
+          - 'Local Test'
       module:
         description: 'Run for single sbt sub-project'
         required: false
@@ -58,22 +63,22 @@ jobs:
       with:
         jvm: adopt:11
     - name: Check
-      run: scala-cli run scripts/sbt-release.sc --main-class check -- "${{ inputs.module }}" 
+      run: sh scripts/sbt-release.sh check "${{ inputs.module }}"
     - name: Test
-      run: scala-cli run scripts/sbt-release.sc --main-class test -- "${{ inputs.module }}" 
+      run: sh scripts/sbt-release.sh test "${{ inputs.module }}"
     - name: Pre Release
-      run: scala-cli run scripts/sbt-release.sc --main-class preRelease -- "${{ inputs.module }}" "${{ inputs.version }}"
+      run: sh scripts/sbt-release.sh preRelease "${{ inputs.module }}" "${{ inputs.version }}"
     - name: Release
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      run: scala-cli run scripts/sbt-release.sc --main-class release -- "${{ inputs.module }}" "${{ inputs.promote }}"
+      run: sh scripts/sbt-release.sh release "${{ inputs.module }}" "${{ inputs.promote }}"
     - name: Post Release
-      run: scala-cli run scripts/sbt-release.sc --main-class postRelease -- "${{ inputs.module }}" "${{ inputs.next_version }}"
+      run: sh scripts/sbt-release.sh postRelease "${{ inputs.module }}" "${{ inputs.next_version }}"
     - name: Push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: scala-cli run scripts/sbt-release.sc --main-class push "${{ inputs.module }}" 
+      run: sh scripts/sbt-release.sh push "${{ inputs.module }}"
 
   releaseStep:
     if: ${{ inputs.step != '<none>' }}
@@ -87,7 +92,7 @@ jobs:
           jvm: adopt:11
       - name: ${{ inputs.step }}
         run: |
-          scala-cli run scripts/sbt-release.sc --main-class step -- \
+          sh scripts/sbt-release.sh step \
             "${{ inputs.step }}" \
             "${{ inputs.module }}" \
             "${{ inputs.version }}" \
