@@ -1,0 +1,91 @@
+name: SBT CI - Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: false
+        type: string
+      next_version:
+        description: 'Next development version'
+        required: false
+        type: string
+      promote:
+        description: 'Promote to release'
+        required: false
+        type: boolean
+        default: false
+      module:
+        description: 'Run for single sbt sub-project'
+        required: false
+        type: choice
+        options:
+          - core
+          - akka
+          - fs2
+          - noop
+          - jaeger
+          - compiler-plugin
+      step:
+        description: 'Run single release step'
+        required: false
+        type: choice
+        options:
+          - check
+          - test
+          - pre-release
+          - release
+          - post-release
+          - push
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ !inputs.step }}
+    name: Release ${{ inputs.module || 'all' }} - ${{ inputs.promote && 'Maven Central' || 'Sonatype Staging' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: coursier/cache-action@v6.3
+    - uses: VirtusLab/scala-cli-setup@main
+      with:
+        jvm: adopt:11
+    - name: Check
+      run: scala-cli run scripts/sbt-release.sc --main-class check
+    - name: Test
+      run: scala-cli run scripts/sbt-release.sc --main-class test
+    - name: Pre Release
+      run: scala-cli run scripts/sbt-release.sc --main-class pre-release -- "${{ inputs.version }}"
+    - name: Release
+      env:
+        SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      run: scala-cli run scripts/sbt-release.sc --main-class release -- "${{ inputs.promote }}"
+    - name: Post Release
+      run: scala-cli run scripts/sbt-release.sc --main-class post-release -- "${{ inputs.next_version }}"
+    - name: Push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: scala-cli run scripts/sbt-release.sc --main-class push
+
+  releaseStep:
+    if: ${{ inputs.step }}
+    name: Release ${{ inputs.module || 'all' }} - Step '${{ inputs.step }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: coursier/cache-action@v6.3
+      - uses: VirtusLab/scala-cli-setup@main
+        with:
+          jvm: adopt:11
+      - name: ${{ inputs.step }}
+        run: |
+          scala-cli run scripts/sbt-release.sc --main-class step -- \
+            "${{ inputs.step }}" \
+            "${{ inputs.module }}" \
+            "${{ inputs.version }}" \
+            "${{ inputs.next_version }}" \
+             ${{ inputs.promote }}
