@@ -44,9 +44,9 @@ inline private def nonEmpty(s0: String, cmd: String) =
 
 
 inline private def runSbt(module: String, stage: String, cmds: String*): Unit =
-  val setModule = nonEmpty(module, "project")
+  val setModule = nonEmpty(module, ";project")
   val setStage = s"set releaseStage := $"$stage$""
-  val cmd = (setModule +: setStage +: cmds).mkString(";", " ;", "")
+  val cmd = (setModule +: setStage +: cmds).mkString(" ;")
 
   println(s"Running sbt $"$cmd$"")
   val result = Process("sbt", Seq(cmd)).!
