@@ -62,14 +62,14 @@ jobs:
     - name: Test
       run: scala-cli run scripts/sbt-release.sc --main-class test
     - name: Pre Release
-      run: scala-cli run scripts/sbt-release.sc --main-class pre-release -- "${{ inputs.version }}"
+      run: scala-cli run scripts/sbt-release.sc --main-class preRelease -- "${{ inputs.version }}"
     - name: Release
       env:
         SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       run: scala-cli run scripts/sbt-release.sc --main-class release -- "${{ inputs.promote }}"
     - name: Post Release
-      run: scala-cli run scripts/sbt-release.sc --main-class post-release -- "${{ inputs.next_version }}"
+      run: scala-cli run scripts/sbt-release.sc --main-class postRelease -- "${{ inputs.next_version }}"
     - name: Push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

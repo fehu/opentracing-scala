@@ -10,7 +10,7 @@ def check(module: String): Unit = runSbt(module, "check", "release with-defaults
 def test(module: String): Unit = runSbt(module, "test", "release with-defaults")
 
 @main
-def `pre-release`(module: String, version0: String): Unit =
+def preRelease(module: String, version0: String): Unit =
   val version = nonEmpty(version0, "release-version")
   runSbt(module, "pre-release", s"release$version with-defaults")
 
@@ -20,7 +20,7 @@ def release(module: String, promote0: Boolean): Unit =
   runSbt(module, "release", promote, "release with-defaults")
 
 @main
-def `post-release`(module: String, nextVersion0: String): Unit =
+def postRelease(module: String, nextVersion0: String): Unit =
   val nextVersion = nonEmpty(nextVersion0, "next-version")
   runSbt(module, "post-release", s"release$nextVersion with-defaults")
 
@@ -32,9 +32,9 @@ def step(step: String, module: String, version: String, nextVersion: String, pro
   step match
     case "check"        => check(module)
     case "test"         => test(module)
-    case "pre-release"  => `pre-release`(module, version)
+    case "pre-release"  => preRelease(module, version)
     case "release"      => release(module, promote)
-    case "post-release" => `post-release`(module, nextVersion)
+    case "post-release" => postRelease(module, nextVersion)
     case "push"         => push(module)
     case other          => sys.error(s"Unknown step: $"$other$"")
 
