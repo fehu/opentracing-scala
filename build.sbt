@@ -140,7 +140,7 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
   releaseStage      := "check"
 )
 
-lazy val releaseModuleSettings: Def.SettingsDefinition = Seq(
+lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
   releaseVersionFile := releaseVerFile.value
 )
 
