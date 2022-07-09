@@ -113,7 +113,7 @@ ThisBuild / Test / parallelExecution := false
 // // // Compiler Plugin (Scala 2 only) // // //
 
 // Has its own configuration file (and own version)
-lazy val compilerPlugin = project in file("compiler-plugin") settings (
+lazy val `compiler-plugin` = project in file("compiler-plugin") settings (
   crossScalaVersions := List(scala212, scala213),
   crossVersion := CrossVersion.full
 )

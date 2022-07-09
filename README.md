@@ -92,7 +92,7 @@ Other modules:
 - `opentracing-scala-jaeger` - Setup helper for `io.jaegertracing`.
 - `opentracing-scala-noop` - No-op setup.
 
-# `opentracing-jaeger-scalac-implicits` (Scala 2 only)
+# `opentracing-scalac-implicits-jaeger` (Scala 2 only)
 
 **Compiler plugin** that traces _implicit searches_ performed by scalac
 and reports them to local jaegertracing backend.
