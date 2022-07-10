@@ -66,7 +66,7 @@ on:
         required: false
         type: string
       step_tag:
-        description: 'Step 4: Tag'
+        description: 'Tag'
         required: true
         type: boolean
         default: true
@@ -81,12 +81,12 @@ on:
         default: true
       # override_
       step_package_maven:
-        description: 'Step 5: Maven Style'
+        description: 'Maven Style'
         required: true
         type: boolean
         default: true
       step_sign:
-        description: 'Step 5: Sign'
+        description: 'Sign'
         required: true
         type: boolean
         default: true
