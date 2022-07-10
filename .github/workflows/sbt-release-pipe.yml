@@ -35,7 +35,7 @@ on:
         default: false
 
       separator_1:
-        description: ''
+        description: '-'
         required: false
         type: choice
         options:
@@ -89,7 +89,7 @@ on:
         default: true
 
       separator_3:
-        description: ''
+        description: '-'
         required: false
         type: choice
         options:
