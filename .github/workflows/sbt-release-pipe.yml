@@ -35,75 +35,79 @@ on:
         default: false
 
       separator_1:
+        required: false
+        type: choice
+        options:
+          - '------------------------------------'
+
+      set_release_version:
+        description: 'Set release version'
+        required: true
+        type: boolean
+        default: false
+      override_version:
+        description: '(Override)'
+        required: false
+        type: string
+      set_tag:
+        description: 'Tag'
+        required: true
+        type: boolean
+        default: false
+      override_tag:
+        description: '(Override)'
+        required: false
+        type: string
+
+      separator_2:
         description: '------------------------------------'
         required: false
         type: choice
         options:
           - '--- Package and sign artifacts ---'
 
-      step_check:
-        description: 'Step 1: Check dependencies'
+      pkg_check:
+        description: 'Check dependencies'
         required: true
         type: boolean
         default: true
-      step_compile:
-        description: 'Step 2: Compile'
+      pkg_test:
+        description: 'Test'
         required: true
         type: boolean
         default: true
-      step_test:
-        description: 'Step 3: Test'
+      pkg_maven:
+        description: 'Package Maven Style'
         required: true
         type: boolean
         default: true
-      step_release_version:
-        description: 'Step 4: Set release version'
-        required: true
-        type: boolean
-        default: true
-      override_version:
-        description: '(Override)'
-        required: false
-        type: string
-      step_tag:
-        description: 'Tag'
-        required: true
-        type: boolean
-        default: true
-      override_tag:
-        description: '(Override)'
-        required: false
-        type: string
-      step_package:
-        description: 'Step 5: Package'
-        required: true
-        type: boolean
-        default: true
-      # override_
-      step_package_maven:
-        description: 'Maven Style'
-        required: true
-        type: boolean
-        default: true
-      step_sign:
+      pkg_sign:
         description: 'Sign'
         required: true
         type: boolean
         default: true
-      step_next_version:
-        description: 'Step 6: Set next development version'
+
+      separator_3:
+        required: false
+        type: choice
+        options:
+          - '------------------------------------'
+
+      set_next_version:
+        description: 'Set next development version'
         required: true
         type: boolean
-        default: true
+        default: false
       override_next_version:
         description: '(Override)'
         required: false
         type: string
-      step_push:
-        description: 'Step 7: Push changes'
-        required: true
-        type: boolean
-        default: true
+
+      separator_4:
+        required: false
+        type: choice
+        options:
+          - '------------------------------------'
 
 #      separator_2:
 #        description: '------------------------------------'
@@ -112,29 +116,40 @@ on:
 #        options:
 #          - '--- Publish to Sonatype ---'
 
-#      step_release:
-#        description: 'Step 8: Publish / Release'
+#      publish_sonatype:
+#        description: 'Publish to Sonatype'
 #        required: true
 #        type: boolean
 #        default: true
-#      target:
-#        description: 'Publish target'
-#        required: true
-#        type: choice
-#        default: 'Staging'
-#        options:
-#          - 'Release'
-#          - 'Promote'
-#          - 'Staging'
-#          - 'Local Test'
+      publish_sonatype:
+        description: 'Publish to Sonatype'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - 'Release'
+          - 'Promote to Release'
+          - 'Staging'
+          - 'Snapshot'
+
+      publish_release:
+        description: 'Publish on Github'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
+
   package_signed:
     name: 'Package and sign artifacts'
     runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: git-actions/set-user@v1.0.0
 
 #  check:
 #    name: 'Step 1: Check dependencies'
