@@ -14,6 +14,7 @@ assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _*)            => MergeStrategy.discard
   case PathList("rootdoc.txt")             => MergeStrategy.discard
+  case PathList("LICENSE" | "NOTICE")      => MergeStrategy.deduplicate
   case PathList("javax", "annotation", _*) => MergeStrategy.first
   case _                                   => MergeStrategy.singleOrError
 }
