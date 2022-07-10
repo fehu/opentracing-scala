@@ -34,7 +34,7 @@ on:
 
       publish_sonatype:
         description: 'Publish to Sonatype'
-        required: true
+        required: false
         type: choice
         default: 'Staging'
         options:
