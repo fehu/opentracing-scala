@@ -26,8 +26,8 @@ object Release {
       tagRelease
     ),
     Stage.Release -> (releaseTarget.value match {
-      case Target.Staging   => Seq("+publishSigned", "+makePom", "sonatypePrepare", "sonatypeBundleUpload")
-      case Target.Release   => Seq("+publishSigned", "+makePom", "sonatypeBundleRelease")
+      case Target.Staging   => Seq("+publishSigned", "sonatypePrepare", "sonatypeBundleUpload")
+      case Target.Release   => Seq("+publishSigned", "sonatypeBundleRelease")
       case Target.Promote   => Seq("sonatypeRelease")
       case Target.LocalTest => Seq("+publishSigned")
     }).map(releaseStepCommandAndRemaining(_): ReleaseStep),

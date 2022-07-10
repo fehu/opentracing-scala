@@ -7,7 +7,7 @@ inThisBuild(Seq(
   sonatypeRepository := "https://s01.oss.sonatype.org/",
   publishMavenStyle := true,
   licenses := Seq(License.MIT),
-  homepage := None,
+  homepage := Some(url("https://github.com/fehu/opentracing-scala")),
   scmInfo := Some(
     ScmInfo(
       url("https://github.com/fehu/opentracing-scala"),
