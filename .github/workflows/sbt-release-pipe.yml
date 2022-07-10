@@ -105,10 +105,10 @@ on:
         required: false
         type: string
 
-      separator_4:
-        description: ''
-        required: false
-        type: choice
+#      separator_4:
+#        description: ''
+#        required: false
+#        type: choice
 
 #      separator_2:
 #        description: '------------------------------------'
