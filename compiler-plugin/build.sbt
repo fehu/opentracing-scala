@@ -26,5 +26,6 @@ Compile / packageBin := (Compile / assembly).value
 crossVersion := CrossVersion.full
 
 releaseTagName := s"plugin-v${version.value}"
+releaseUseGlobalVersion := false
 
 sonatypeBundleDirectory := target.value / "sonatype-staging" / version.value
