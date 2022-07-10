@@ -61,36 +61,6 @@ on:
         required: true
         type: boolean
         default: true
-      module_core:
-        description: 'Module: core'
-        required: true
-        type: boolean
-        default: true
-      module_akka:
-        description: 'Module: akka'
-        required: true
-        type: boolean
-        default: true
-      module_fs2:
-        description: 'Module: fs2'
-        required: true
-        type: boolean
-        default: true
-      module_noop:
-        description: 'Module: noop'
-        required: true
-        type: boolean
-        default: true
-      module_jaeger:
-        description: 'Module: jaeger'
-        required: true
-        type: boolean
-        default: true
-      module_compiler_plugin:
-        description: 'Module: compiler-plugin'
-        required: true
-        type: boolean
-        default: false
 
       publish_sonatype:
         description: 'Publish to Sonatype'
