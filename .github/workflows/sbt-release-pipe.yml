@@ -42,22 +42,22 @@ on:
           - '2.13'
           - '3.1'
       pkg_check:
-        description: 'Check dependencies'
+        description: '- Check dependencies'
         required: true
         type: boolean
         default: true
       pkg_test:
-        description: 'Test'
+        description: '- Test'
         required: true
         type: boolean
         default: true
       pkg_maven:
-        description: 'Package Maven Style'
+        description: '- Package Maven Style'
         required: true
         type: boolean
         default: true
       pkg_sign:
-        description: 'Sign'
+        description: '- Sign'
         required: true
         type: boolean
         default: true
