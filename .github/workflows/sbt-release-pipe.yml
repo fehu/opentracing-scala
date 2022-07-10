@@ -35,6 +35,7 @@ on:
         default: false
 
       separator_1:
+        description: ''
         required: false
         type: choice
         options:
@@ -88,6 +89,7 @@ on:
         default: true
 
       separator_3:
+        description: ''
         required: false
         type: choice
         options:
@@ -104,10 +106,9 @@ on:
         type: string
 
       separator_4:
+        description: ''
         required: false
         type: choice
-        options:
-          - '------------------------------------'
 
 #      separator_2:
 #        description: '------------------------------------'
