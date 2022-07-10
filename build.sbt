@@ -141,7 +141,8 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
   releaseCrossBuild := true,
   releaseProcess    := stages.value(releaseStage.value),
   releaseTarget     := Target.Staging,
-  releaseStage      := Stage.Check
+  releaseStage      := Stage.Check,
+  sonatypeBundleDirectory := (ThisBuild / baseDirectory).value / "target" / "sonatype-staging" / s"$namePrefix-${version.value}"
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
