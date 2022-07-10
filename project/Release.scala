@@ -25,14 +25,12 @@ object Release {
       commitReleaseVersion,
       tagRelease
     ),
-    Stage.Release -> (Seq[ReleaseStep](
-      inquireVersions
-    ) ++ (releaseTarget.value match {
+    Stage.Release -> (releaseTarget.value match {
       case Target.Staging   => Seq("+publishSigned", "sonatypePrepare", "sonatypeBundleUpload")
       case Target.Release   => Seq("+publishSigned", "sonatypeBundleRelease")
       case Target.Promote   => Seq("sonatypeRelease")
       case Target.LocalTest => Seq("+publishSigned")
-    }).map(releaseStepCommandAndRemaining(_): ReleaseStep)),
+    }).map(releaseStepCommandAndRemaining(_): ReleaseStep),
 
     Stage.PostRelease -> Seq(
       inquireVersions,
