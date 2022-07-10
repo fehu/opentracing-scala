@@ -63,7 +63,8 @@ jobs:
       - uses: git-actions/set-user@v1.0.0
       - name: 'Set release version'
         run: sbt set-release ${{ inputs.set_tag }} ${{ inputs.override_version }}
-  package_signed:
+
+  foo:
     name: 'Package and sign artifacts'
     needs: set_release_version
     runs-on: ubuntu-latest
@@ -93,6 +94,7 @@ jobs:
        run: echo "::set-output name=tag::$(cat ~/work/opentracing-scala/opentracing-scala/target/staging-version.txt)"
     outputs:
       tag: ${{ steps.out_tag.outputs.tag }}
+
   set_next_version:
     name: 'Set next development version'
     if: ${{ inputs.set_next_version }}
@@ -108,6 +110,7 @@ jobs:
       - uses: git-actions/set-user@v1.0.0
       - name: 'Set next development version'
         run: sbt set-devel ${{ inputs.override_next_version }}
+
   publish_sonatype:
     name: 'Publish to Sonatype - ${{ inputs.target }}'
     if: ${{ inputs.publish_sonatype }}
@@ -122,6 +125,7 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: sbt publish-sonatype ${{ inputs.target }}
+
   publish_release:
     name: 'Publish on Github'
     if: ${{ inputs.publish_release }}
