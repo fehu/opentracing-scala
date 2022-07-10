@@ -22,6 +22,7 @@ object Release {
     Stage.PreRelease -> Seq(
       inquireVersions,
       setReleaseVersion,
+      releaseStepCommand("makePom"),
       commitReleaseVersion,
       tagRelease
     ),
