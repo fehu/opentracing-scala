@@ -56,7 +56,8 @@ lazy val root = (project in file("."))
   .settings(
     name := namePrefix,
     releaseCommonSettings,
-    publish / skip := true
+    publish / skip := true,
+    sonatypePublishTo := None
   )
   .aggregate(core, akka, fs2, noop, jaeger)
 
