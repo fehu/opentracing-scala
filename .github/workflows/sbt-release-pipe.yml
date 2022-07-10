@@ -92,8 +92,8 @@ jobs:
          path: ~/work/opentracing-scala/opentracing-scala/target/staging-bundle/
      - id: out_tag
        run: echo "::set-output name=tag::$(cat ~/work/opentracing-scala/opentracing-scala/target/staging-version.txt)"
-#    outputs:
-#      tag: ${{ steps.out_tag.outputs.tag }}
+    outputs:
+      tag: ${{ steps.out_tag.outputs.tag }}
 
   set_next_version:
     name: 'Set next development version'
