@@ -8,6 +8,7 @@ object Release {
   lazy val releaseTarget  = Def.settingKey[Target]("Where to release")
   lazy val releaseStage   = Def.settingKey[Stage]("Release stage")
   lazy val releaseVerFile = Def.settingKey[File]("Common version file")
+  lazy val releaseOutDir  = Def.settingKey[File]("Common staging directory")
 
   lazy val stages: Def.Initialize[Map[Stage, Seq[ReleaseStep]]] = Def.setting(Map(
     Stage.Check -> Seq(
