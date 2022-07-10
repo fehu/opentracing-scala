@@ -144,7 +144,8 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
   releaseCrossBuild := true,
   releaseProcess    := stages.value(releaseStage.value),
   releaseTarget     := Target.Staging,
-  releaseStage      := Stage.Check
+  releaseStage      := Stage.Check,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
