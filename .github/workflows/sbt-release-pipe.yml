@@ -3,6 +3,44 @@ name: SBT / Scala - Release Pipe
 on:
   workflow_dispatch:
     inputs:
+      set_release_version:
+        description: 'Set release version'
+        required: true
+        type: boolean
+        default: true
+      override_version:
+        description: '(Override)'
+        required: false
+        type: string
+      set_tag:
+        description: 'Tag'
+        required: true
+        type: boolean
+        default: true
+      override_tag:
+        description: '(Override)'
+        required: false
+        type: string
+
+      set_next_version:
+        description: 'Set next development version'
+        required: true
+        type: boolean
+        default: false
+      override_next_version:
+        description: '(Override)'
+        required: false
+        type: string
+
+      pkg:
+        description: 'Package and sign artifacts'
+        required: true
+        type: choice
+        options:
+          - 'cross'
+          - '2.12'
+          - '2.13'
+          - '3.1'
       module_core:
         description: 'opentracing-scala-core'
         required: true
@@ -34,39 +72,6 @@ on:
         type: boolean
         default: false
 
-      separator_1:
-        description: '-'
-        required: false
-        type: choice
-        options:
-          - '------------------------------------'
-
-      set_release_version:
-        description: 'Set release version'
-        required: true
-        type: boolean
-        default: false
-      override_version:
-        description: '(Override)'
-        required: false
-        type: string
-      set_tag:
-        description: 'Tag'
-        required: true
-        type: boolean
-        default: false
-      override_tag:
-        description: '(Override)'
-        required: false
-        type: string
-
-      separator_2:
-        description: '------------------------------------'
-        required: false
-        type: choice
-        options:
-          - '--- Package and sign artifacts ---'
-
       pkg_check:
         description: 'Check dependencies'
         required: true
@@ -88,43 +93,9 @@ on:
         type: boolean
         default: true
 
-      separator_3:
-        description: '-'
-        required: false
-        type: choice
-        options:
-          - '------------------------------------'
-
-      set_next_version:
-        description: 'Set next development version'
-        required: true
-        type: boolean
-        default: false
-      override_next_version:
-        description: '(Override)'
-        required: false
-        type: string
-
-#      separator_4:
-#        description: ''
-#        required: false
-#        type: choice
-
-#      separator_2:
-#        description: '------------------------------------'
-#        required: false
-#        type: choice
-#        options:
-#          - '--- Publish to Sonatype ---'
-
-#      publish_sonatype:
-#        description: 'Publish to Sonatype'
-#        required: true
-#        type: boolean
-#        default: true
       publish_sonatype:
         description: 'Publish to Sonatype'
-        required: false
+        required: true
         type: choice
         default: ''
         options:
@@ -136,7 +107,7 @@ on:
 
       publish_release:
         description: 'Publish on Github'
-        required: false
+        required: true
         type: boolean
         default: false
 
