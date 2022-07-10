@@ -26,7 +26,7 @@ on:
         description: 'Set next development version'
         required: true
         type: boolean
-        default: false
+        default: true
       override_next_version:
         description: '(Override)'
         required: false
@@ -34,44 +34,13 @@ on:
 
       pkg:
         description: 'Package and sign artifacts'
-        required: true
+        required: false
         type: choice
         options:
           - 'cross'
           - '2.12'
           - '2.13'
           - '3.1'
-      module_core:
-        description: 'opentracing-scala-core'
-        required: true
-        type: boolean
-        default: true
-      module_akka:
-        description: 'opentracing-scala-akka'
-        required: true
-        type: boolean
-        default: true
-      module_fs2:
-        description: 'opentracing-scala-fs2'
-        required: true
-        type: boolean
-        default: true
-      module_noop:
-        description: 'opentracing-scala-noop'
-        required: true
-        type: boolean
-        default: true
-      module_jaeger:
-        description: 'opentracing-scala-jaeger'
-        required: true
-        type: boolean
-        default: true
-      module_compiler_plugin:
-        description: 'opentracing-scalac-implicits-jaeger'
-        required: true
-        type: boolean
-        default: false
-
       pkg_check:
         description: 'Check dependencies'
         required: true
@@ -92,6 +61,36 @@ on:
         required: true
         type: boolean
         default: true
+      module_core:
+        description: 'Module: core'
+        required: true
+        type: boolean
+        default: true
+      module_akka:
+        description: 'Module: akka'
+        required: true
+        type: boolean
+        default: true
+      module_fs2:
+        description: 'Module: fs2'
+        required: true
+        type: boolean
+        default: true
+      module_noop:
+        description: 'Module: noop'
+        required: true
+        type: boolean
+        default: true
+      module_jaeger:
+        description: 'Module: jaeger'
+        required: true
+        type: boolean
+        default: true
+      module_compiler_plugin:
+        description: 'Module: compiler-plugin'
+        required: true
+        type: boolean
+        default: false
 
       publish_sonatype:
         description: 'Publish to Sonatype'
