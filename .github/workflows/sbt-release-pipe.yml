@@ -3,32 +3,59 @@ name: SBT / Scala - Release Pipe
 on:
   workflow_dispatch:
     inputs:
-      module:
-        description: 'Run for single sbt sub-project'
-        type: choice
-        default: 'root+'
-        options:
-          - core
-          - akka
-          - fs2
-          - noop
-          - jaeger
-          - root+
-          - compiler-plugin
+      module_core:
+        description: 'opentracing-scala-core'
+        required: true
+        type: boolean
+        default: true
+      module_akka:
+        description: 'opentracing-scala-akka'
+        required: true
+        type: boolean
+        default: true
+      module_fs2:
+        description: 'opentracing-scala-fs2'
+        required: true
+        type: boolean
+        default: true
+      module_noop:
+        description: 'opentracing-scala-noop'
+        required: true
+        type: boolean
+        default: true
+      module_jaeger:
+        description: 'opentracing-scala-jaeger'
+        required: true
+        type: boolean
+        default: true
+      module_compiler_plugin:
+        description: 'opentracing-scalac-implicits-jaeger'
+        required: true
+        type: boolean
+        default: false
+
+      separator:
+        description: '------------------------------------\nPackage and sign artifacts'
+        required: false
+
       step_check:
         description: 'Step 1: Check dependencies'
+        required: true
         type: boolean
         default: true
       step_compile:
         description: 'Step 2: Compile'
+        required: true
         type: boolean
         default: true
       step_test:
         description: 'Step 3: Test'
+        required: true
         type: boolean
         default: true
       step_release_version:
         description: 'Step 4: Set release version'
+        required: true
         type: boolean
         default: true
       override_version:
@@ -37,6 +64,7 @@ on:
         type: string
       step_tag:
         description: 'Step 4: Tag'
+        required: true
         type: boolean
         default: true
       override_tag:
@@ -45,6 +73,7 @@ on:
         type: string
       step_release:
         description: 'Step 5: Publish / Release'
+        required: true
         type: boolean
         default: true
       target:
@@ -59,6 +88,7 @@ on:
           - 'Local Test'
       step_next_version:
         description: 'Step 6: Set next development version'
+        required: true
         type: boolean
         default: true
       override_next_version:
@@ -67,6 +97,7 @@ on:
         type: string
       step_push:
         description: 'Step 7: Push changes'
+        required: true
         type: boolean
         default: true
 
@@ -74,26 +105,30 @@ permissions:
   contents: write
 
 jobs:
-  check:
-    name: '[${{ inputs.module }}] Step 1: Check dependencies'
-    if: ${{ inputs.step_check }}
+  package_signed:
+    name: 'Package and sign artifacts'
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      #- uses: actions/cache@v3
-      #  with:
-      #    path: |
-      #      ~/.ivy2/cache
-      #      ~/.sbt
-      #      ~/work/opentracing-scala/opentracing-scala/
-      #      
-      #    key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-      - uses: coursier/cache-action@v6.3
-      - uses: VirtusLab/scala-cli-setup@main
-        with:
-          jvm: adopt:11
-      - # id: run
-        run: ./scripts/sbt-release-pipe.sh check "${{ inputs.module }}"
-    # outputs:
-    #   output1: ${{ steps.run.outputs.test }}
-    #   output2: ${{ steps.step2.outputs.test }}
+
+#  check:
+#    name: 'Step 1: Check dependencies'
+#    if: ${{ inputs.step_check }}
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      #- uses: actions/cache@v3
+#      #  with:
+#      #    path: |
+#      #      ~/.ivy2/cache
+#      #      ~/.sbt
+#      #      ~/work/opentracing-scala/opentracing-scala/
+#      #
+#      #    key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+#      - uses: coursier/cache-action@v6.3
+#      - uses: VirtusLab/scala-cli-setup@main
+#        with:
+#          jvm: adopt:11
+#      - # id: run
+#        run: ./scripts/sbt-release-pipe.sh check "${{ inputs.module }}"
+#    # outputs:
+#    #   output1: ${{ steps.run.outputs.test }}
+#    #   output2: ${{ steps.step2.outputs.test }}
