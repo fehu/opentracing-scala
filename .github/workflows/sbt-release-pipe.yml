@@ -64,9 +64,9 @@ jobs:
       - name: 'Set release version'
         run: sbt set-release ${{ inputs.set_tag }} ${{ inputs.override_version }}
 
-  foo:
+  package_signed:
     name: 'Package and sign artifacts'
-    needs: set_release_version
+#    needs: set_release_version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
