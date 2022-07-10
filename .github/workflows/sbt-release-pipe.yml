@@ -66,7 +66,7 @@ jobs:
 
   package_signed:
     name: 'Package and sign artifacts'
-#    needs: set_release_version
+    needs: set_release_version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -92,8 +92,8 @@ jobs:
          path: ~/work/opentracing-scala/opentracing-scala/target/staging-bundle/
      - id: out_tag
        run: echo "::set-output name=tag::$(cat ~/work/opentracing-scala/opentracing-scala/target/staging-version.txt)"
-    outputs:
-      tag: ${{ steps.out_tag.outputs.tag }}
+#    outputs:
+#      tag: ${{ steps.out_tag.outputs.tag }}
 
   set_next_version:
     name: 'Set next development version'
