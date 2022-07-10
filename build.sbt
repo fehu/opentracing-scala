@@ -135,18 +135,19 @@ import Release._
 import ReleaseDefs._
 
 ThisBuild / releaseVerFile := (root / releaseVersionFile).value
+ThisBuild / releaseOutDir  := (root / sonatypeBundleDirectory).value
 
 lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
   publishTo         := sonatypePublishToBundle.value,
   releaseCrossBuild := true,
   releaseProcess    := stages.value(releaseStage.value),
   releaseTarget     := Target.Staging,
-  releaseStage      := Stage.Check,
-  sonatypeBundleDirectory := (ThisBuild / baseDirectory).value / "target" / "sonatype-staging" / s"$namePrefix-${version.value}"
+  releaseStage      := Stage.Check
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
-  releaseVersionFile := releaseVerFile.value
+  releaseVersionFile := releaseVerFile.value,
+  sonatypeBundleDirectory := releaseOutDir.value
 )
 
 
