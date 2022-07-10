@@ -57,7 +57,7 @@ lazy val root = (project in file("."))
     name := namePrefix,
     releaseCommonSettings,
     publish / skip := true,
-    sonatypePublishTo := None
+    sonatypePublishToBundle := None
   )
   .aggregate(core, akka, fs2, noop, jaeger)
 
@@ -136,7 +136,6 @@ import Release._
 import ReleaseDefs._
 
 ThisBuild / releaseVerFile := (root / releaseVersionFile).value
-ThisBuild / releaseOutDir  := (root / sonatypeBundleDirectory).value
 
 lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
   publishTo         := sonatypePublishToBundle.value,
@@ -147,8 +146,7 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
-  releaseVersionFile := releaseVerFile.value,
-  sonatypeBundleDirectory := releaseOutDir.value
+  releaseVersionFile := releaseVerFile.value
 )
 
 
