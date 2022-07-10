@@ -32,43 +32,12 @@ on:
         required: false
         type: string
 
-      pkg:
-        description: 'Package and sign artifacts'
-        required: false
-        type: choice
-        options:
-          - 'cross'
-          - '2.12'
-          - '2.13'
-          - '3.1'
-      pkg_check:
-        description: '- Check dependencies'
-        required: true
-        type: boolean
-        default: true
-      pkg_test:
-        description: '- Test'
-        required: true
-        type: boolean
-        default: true
-      pkg_maven:
-        description: '- Package Maven Style'
-        required: true
-        type: boolean
-        default: true
-      pkg_sign:
-        description: '- Sign'
-        required: true
-        type: boolean
-        default: true
-
       publish_sonatype:
         description: 'Publish to Sonatype'
         required: true
         type: choice
-        default: ''
+        default: 'Staging'
         options:
-          - ''
           - 'Release'
           - 'Promote to Release'
           - 'Staging'
