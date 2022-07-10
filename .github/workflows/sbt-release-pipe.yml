@@ -34,9 +34,12 @@ on:
         type: boolean
         default: false
 
-      separator:
-        description: '------------------------------------\nPackage and sign artifacts'
+      separator_1:
+        description: '------------------------------------'
         required: false
+        type: choice
+        options:
+          - '--- Package and sign artifacts ---'
 
       step_check:
         description: 'Step 1: Check dependencies'
@@ -71,21 +74,22 @@ on:
         description: '(Override)'
         required: false
         type: string
-      step_release:
-        description: 'Step 5: Publish / Release'
+      step_package:
+        description: 'Step 5: Package'
         required: true
         type: boolean
         default: true
-      target:
-        description: 'Publish target'
+      # override_
+      step_package_maven:
+        description: 'Step 5: Maven Style'
         required: true
-        type: choice
-        default: 'Staging'
-        options:
-          - 'Release'
-          - 'Promote'
-          - 'Staging'
-          - 'Local Test'
+        type: boolean
+        default: true
+      step_sign:
+        description: 'Step 5: Sign'
+        required: true
+        type: boolean
+        default: true
       step_next_version:
         description: 'Step 6: Set next development version'
         required: true
@@ -100,6 +104,29 @@ on:
         required: true
         type: boolean
         default: true
+
+#      separator_2:
+#        description: '------------------------------------'
+#        required: false
+#        type: choice
+#        options:
+#          - '--- Publish to Sonatype ---'
+
+#      step_release:
+#        description: 'Step 8: Publish / Release'
+#        required: true
+#        type: boolean
+#        default: true
+#      target:
+#        description: 'Publish target'
+#        required: true
+#        type: choice
+#        default: 'Staging'
+#        options:
+#          - 'Release'
+#          - 'Promote'
+#          - 'Staging'
+#          - 'Local Test'
 
 permissions:
   contents: write
