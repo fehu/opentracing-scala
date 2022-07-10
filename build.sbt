@@ -140,7 +140,7 @@ ThisBuild / releaseVerFile := (root / releaseVersionFile).value
 ThisBuild / releaseOutDir  := (root / sonatypeBundleDirectory).value
 
 lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
-  publishTo         := sonatypePublishToBundle.value,
+//  publishTo         := sonatypePublishToBundle.value,
   releaseCrossBuild := true,
   releaseProcess    := stages.value(releaseStage.value),
   releaseTarget     := Target.Staging,
@@ -149,6 +149,7 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
+  publishTo := Some(Resolver.file("artifacts", (root / target).value)),
   releaseVersionFile := releaseVerFile.value,
   sonatypeBundleDirectory := releaseOutDir.value
 )
