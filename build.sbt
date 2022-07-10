@@ -149,7 +149,7 @@ lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
-  publishTo := Some(Resolver.file("artifacts", (root / target).value)),
+  publishTo := Some(Resolver.file("staging-bundle", (root / target).value)),
   releaseVersionFile := releaseVerFile.value,
   sonatypeBundleDirectory := releaseOutDir.value
 )

@@ -17,10 +17,6 @@ on:
         required: true
         type: boolean
         default: true
-      override_tag:
-        description: '(Override)'
-        required: false
-        type: string
 
       set_next_version:
         description: 'Set next development version'
@@ -53,34 +49,97 @@ permissions:
   contents: write
 
 jobs:
+  set_release_version:
+    name: 'Set release version'
+    if: ${{ inputs.set_release }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'sbt'
+      - uses: git-actions/set-user@v1.0.0
+      - name: 'Set release version'
+        run: sbt set-release ${{ inputs.set_tag }} ${{ inputs.override_version }}
 
   package_signed:
     name: 'Package and sign artifacts'
+    needs: set_release_version
     runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: git-actions/set-user@v1.0.0
-
-#  check:
-#    name: 'Step 1: Check dependencies'
-#    if: ${{ inputs.step_check }}
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      #- uses: actions/cache@v3
-#      #  with:
-#      #    path: |
-#      #      ~/.ivy2/cache
-#      #      ~/.sbt
-#      #      ~/work/opentracing-scala/opentracing-scala/
-#      #
-#      #    key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-#      - uses: coursier/cache-action@v6.3
-#      - uses: VirtusLab/scala-cli-setup@main
+    steps:
+      - uses: actions/checkout@v3
+#      - uses: actions/cache@v3
 #        with:
-#          jvm: adopt:11
-#      - # id: run
-#        run: ./scripts/sbt-release-pipe.sh check "${{ inputs.module }}"
-#    # outputs:
-#    #   output1: ${{ steps.run.outputs.test }}
-#    #   output2: ${{ steps.step2.outputs.test }}
+#          path: |
+#            ~/.ivy2/cache
+#            ~/.sbt
+#          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'sbt'
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: 'Package and sign artifacts'
+        run: sbt package-signed
+     - name: 'Archive artifacts'
+       uses: actions/upload-artifact@v3
+       with:
+         name: staging-bundle
+         path: ~/work/opentracing-scala/opentracing-scala/target/staging-bundle/
+     - id: out_tag
+       run: echo "::set-output name=tag::$(cat ~/work/opentracing-scala/opentracing-scala/target/staging-version.txt)"
+    outputs:
+      tag: ${{ steps.out_tag.outputs.tag }}
+
+  set_next_version:
+    name: 'Set next development version'
+    if: ${{ inputs.set_next_version }}
+    needs: package_signed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'sbt'
+      - uses: git-actions/set-user@v1.0.0
+      - name: 'Set next development version'
+        run: sbt set-devel ${{ inputs.override_next_version }}
+
+  publish_sonatype:
+    name: 'Publish to Sonatype - ${{ inputs.target }}'
+    if: ${{ inputs.publish_sonatype }}
+    needs: package_signed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3.0.0
+        with:
+          name: staging-bundle
+      - name: 'Publish to Sonatype - ${{ inputs.target }}'
+        env:
+          SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: sbt publish-sonatype ${{ inputs.target }}
+
+  publish_release:
+    name: 'Publish on Github'
+    if: ${{ inputs.publish_release }}
+    needs: package_signed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3.0.0
+        with:
+          name: staging-bundle
+      - name: 'Publish on Github'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: Hs1r1us/Release-AIO@v1.0
+        with:
+          tag_name: ${{ package_signed.outputs.tag }}
+          asset_files: ~/work/opentracing-scala/opentracing-scala/target/staging-bundle/
+          draft: true
