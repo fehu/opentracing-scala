@@ -2,6 +2,8 @@
 
 Functional interface for opentracing and its implementation, based on `cats.data.StateT`.
 
+[![opentracing-scala-core Scala version support](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core/latest-by-scala-version.svg?platform=jvm](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core)
+
 # `opentracing-scala-core`
 
 Requires `cats-effect` **3**.
@@ -93,6 +95,8 @@ Other modules:
 - `opentracing-scala-noop` - No-op setup.
 
 # `opentracing-scalac-implicits-jaeger` (Scala 2 only)
+
+
 
 **Compiler plugin** that traces _implicit searches_ performed by scalac
 and reports them to local jaegertracing backend.
