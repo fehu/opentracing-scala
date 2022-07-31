@@ -2,7 +2,7 @@
 
 Functional interface for opentracing and its implementation, based on `cats.data.StateT`.
 
-[![opentracing-scala-core Scala version support](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core/latest-by-scala-version.svg?platform=jvm](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core)
+[![opentracing-scala-core Scala version support](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/fehu/opentracing-scala/opentracing-scala-core)
 
 # `opentracing-scala-core`
 
