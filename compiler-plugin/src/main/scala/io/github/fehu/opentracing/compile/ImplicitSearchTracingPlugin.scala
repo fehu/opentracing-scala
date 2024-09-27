@@ -15,7 +15,8 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
   import global._
 
   val name: String = "TracingImplicitSearch"
-  val description: String = "Traces implicit searches performed by scalac and reports them to local jaegertracing backend"
+  val description: String =
+    "Traces implicit searches performed by scalac and reports them to local jaegertracing backend"
   val components: List[PluginComponent] = Nil
 
   private val spansStack = mutable.Stack.empty[Span]
@@ -24,7 +25,7 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
 
   class ImplicitsTracingAnalyzer extends analyzer.AnalyzerPlugin {
     override def pluginsNotifyImplicitSearch(search: global.analyzer.ImplicitSearch): Unit = {
-      val pos = search.pos
+      val pos  = search.pos
       val code = if (pos.source != NoSourceFile) pos.lineContent else "<NoSourceFile>"
       val span = tracer
         .buildSpan(showShort(search.pt))
@@ -33,7 +34,7 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
         .withTag("file", pos.source.path)
         .withTag("line", pos.line)
         .withTag("code", code)
-        .withTag("pos",  pos.toString)
+        .withTag("pos", pos.toString)
         .start()
       spansStack.push(span)
       super.pluginsNotifyImplicitSearch(search)
@@ -43,12 +44,13 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
       val span = spansStack.pop()
       span.setTag("isSuccess", result.isSuccess)
       val symb = result.tree.symbol
-      val providedBy = if (symb eq null) typeNames.NO_NAME.toString
-                       else {
-                          val rt = result.tree.tpe.resultType
-                          val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
-                          s"${symb.kindString} ${symb.fullNameString}$targs"
-                      }
+      val providedBy =
+        if (symb eq null) typeNames.NO_NAME.toString
+        else {
+          val rt    = result.tree.tpe.resultType
+          val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
+          s"${symb.kindString} ${symb.fullNameString}$targs"
+        }
       span.setTag("provided by", providedBy)
       result.subst.from zip result.subst.to foreach { case (from, to) =>
         span.setTag(s"type subst ${from.name}", to.toLongString)
@@ -66,7 +68,7 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
     private def showName(name0: String): String =
       name0.takeWhile(_ != '{').split('.').reverse match {
         case Array("Aux", name, _*) => name
-        case Array(name, _*) => name
+        case Array(name, _*)        => name
       }
     private def showShort(tpe: Type): String = showName(tpe.typeConstructor.toString)
   }
@@ -78,7 +80,8 @@ object ImplicitSearchTracingPlugin {
   protected val tracer: Tracer = Configuration
     .fromEnv(tracerServiceName)
     .withSampler(
-      SamplerConfiguration.fromEnv()
+      SamplerConfiguration
+        .fromEnv()
         .withType(ConstSampler.TYPE)
         .withParam(1)
     )

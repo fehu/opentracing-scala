@@ -14,17 +14,20 @@ import io.github.fehu.opentracing.transformer.TracedT.AutoConvert.*
 private[opentracing] trait TracedTFunctions {
   def pure[F[_]: Applicative, A](a: A): TracedT[F, A] = TracedT(StateT.pure(a))
 
-  def liftF[F[_]: Applicative, A](fa: F[A]): TracedT[F, A] = TracedT(StateT.liftF(fa))
+  def liftF[F[_]: Applicative, A](fa: F[A]): TracedT[F, A]           = TracedT(StateT.liftF(fa))
   def liftIO[F[_]: Applicative: LiftIO, A](io: IO[A]): TracedT[F, A] = TracedT(StateT.liftF(LiftIO[F].liftIO(io)))
 
-  def raiseError[F[_], A](err: Throwable)(implicit A: ApplicativeError[F, Throwable]): TracedT[F, A] = liftF(A.raiseError[A](err))
+  def raiseError[F[_], A](err: Throwable)(implicit A: ApplicativeError[F, Throwable]): TracedT[F, A] = liftF(
+    A.raiseError[A](err)
+  )
 
-  def defer[F[_]: Sync, A](tfa: => TracedT[F, A]): TracedT[F, A] = traced.defer(tfa)
+  def defer[F[_]: Sync, A](tfa: => TracedT[F, A]): TracedT[F, A]  = traced.defer(tfa)
   def deferIO[F[_]: Sync: LiftIO, A](io: => IO[A]): TracedT[F, A] = defer(liftIO(io))
-  def delay[F[_]: Sync, A](a: => A): TracedT[F, A] = defer(pure(a))
+  def delay[F[_]: Sync, A](a: => A): TracedT[F, A]                = defer(pure(a))
 
   def currentSpan[F[_]: Sync]: Traced.SpanInterface[TracedT[F, _]] = traced.currentSpan
-  def extractContext[F[_]: Sync, C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
+  def extractContext[F[_]: Sync, C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] =
+    traced.extractContext(carrier)
 
   def liftK[F[_]: Applicative]: F ~> TracedT[F, _] = FK.lift[F, TracedT[F, _]](liftF)
 
@@ -42,18 +45,18 @@ private[opentracing] trait TracedTFunctions {
 
 abstract class TracedTFunctionsForSync[F[_]: Sync] {
   def pure[A](a: A): TracedT[F, A] = TracedT(StateT.pure(a))
-  lazy val unit: TracedT[F, Unit] = pure(())
+  lazy val unit: TracedT[F, Unit]  = pure(())
 
-  def liftF[A](fa: F[A]): TracedT[F, A] = TracedT(StateT.liftF(fa))
+  def liftF[A](fa: F[A]): TracedT[F, A]                             = TracedT(StateT.liftF(fa))
   def liftIO[A](io: IO[A])(implicit lift: LiftIO[F]): TracedT[F, A] = TracedT(StateT.liftF(lift.liftIO(io)))
 
   def raiseError[A](err: Throwable): TracedT[F, A] = liftF(Sync[F].raiseError[A](err))
 
-  def defer[A](tfa: => TracedT[F, A]): TracedT[F, A] = traced.defer(tfa)
+  def defer[A](tfa: => TracedT[F, A]): TracedT[F, A]                    = traced.defer(tfa)
   def deferIO[A](io: => IO[A])(implicit lift: LiftIO[F]): TracedT[F, A] = defer(liftIO(io))
-  def delay[A](a: => A): TracedT[F, A] = defer(pure(a))
+  def delay[A](a: => A): TracedT[F, A]                                  = defer(pure(a))
 
-  def currentSpan: Traced.SpanInterface[TracedT[F, _]] = traced.currentSpan
+  def currentSpan: Traced.SpanInterface[TracedT[F, _]]                            = traced.currentSpan
   def extractContext[C <: Propagation#Carrier](carrier: C): TracedT[F, Option[C]] = traced.extractContext(carrier)
 
   def liftK: F ~> TracedT[F, _] = FK.lift[F, TracedT[F, _]](liftF)

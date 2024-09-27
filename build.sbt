@@ -14,7 +14,7 @@ ThisBuild / libraryDependencies ++= {
     case Some((2, 12 | 13)) =>
       Seq(
         Dependencies.`kind-projector`,
-        Dependencies.`monadic-for`,
+        Dependencies.`monadic-for`
       ).map(sbt.compilerPlugin)
     case Some((3, _)) =>
       Seq()
@@ -23,20 +23,22 @@ ThisBuild / libraryDependencies ++= {
 
 ThisBuild / Compile / scalacOptions ++= Seq(
   "-feature",
-  "-deprecation",
+  "-deprecation"
 ) ++ {
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
-    case Some((3, _)) => Seq(
-      "-Ykind-projector:underscores",
-      "-Yexplicit-nulls",
-      "-Ysafe-init",
-      "-source:future",
-    )
-    case Some((2, 12 | 13)) => Seq(
-      "-language:higherKinds",
-      "-Xsource:3",
-      "-P:kind-projector:underscore-placeholders"
-    )
+    case Some((3, _)) =>
+      Seq(
+        "-Ykind-projector:underscores",
+        "-Yexplicit-nulls",
+        "-Ysafe-init",
+        "-source:future"
+      )
+    case Some((2, 12 | 13)) =>
+      Seq(
+        "-language:higherKinds",
+        "-Xsource:3",
+        "-P:kind-projector:underscore-placeholders"
+      )
   }
 }
 
@@ -56,8 +58,8 @@ lazy val root = (project in file("."))
   .settings(
     name := namePrefix,
     releaseCommonSettings,
-    publish / skip := true,
-    sonatypePublishTo := None,
+    publish / skip          := true,
+    sonatypePublishTo       := None,
     sonatypePublishToBundle := None
   )
   .aggregate(core, akka, fs2, noop, jaeger)
@@ -96,12 +98,14 @@ lazy val fs2 = module("fs2")
 lazy val noop = module("noop")
   .settings(
     libraryDependencies += Dependencies.`opentracing-noop`
-  ).dependsOn(core)
+  )
+  .dependsOn(core)
 
 lazy val jaeger = module("jaeger")
   .settings(
     libraryDependencies += Dependencies.`jaeger-client`
-  ).dependsOn(core)
+  )
+  .dependsOn(core)
 
 // // // Tests // // //
 
@@ -124,7 +128,6 @@ lazy val `compiler-plugin` = project in file("compiler-plugin") settings (
 
 addCommandAlias("fullDependencyUpdates", ";dependencyUpdates; reload plugins; dependencyUpdates; reload return")
 
-
 // // // Publishing // // //
 
 ThisBuild / crossVersion := CrossVersion.binary
@@ -140,18 +143,15 @@ ThisBuild / releaseVerFile := (root / releaseVersionFile).value
 ThisBuild / releaseOutDir  := (root / sonatypeBundleDirectory).value
 
 lazy val releaseCommonSettings: Def.SettingsDefinition = Seq(
-  publishTo         := sonatypePublishToBundle.value,
-  releaseCrossBuild := true,
-  releaseProcess    := stages.value(releaseStage.value),
-  releaseTarget     := Target.Staging,
-  releaseStage      := Stage.Check,
+  publishTo                     := sonatypePublishToBundle.value,
+  releaseCrossBuild             := true,
+  releaseProcess                := stages.value(releaseStage.value),
+  releaseTarget                 := Target.Staging,
+  releaseStage                  := Stage.Check,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value
 )
 
 lazy val releaseModuleSettings: Def.SettingsDefinition = releaseCommonSettings.settings ++ Seq(
-  releaseVersionFile := releaseVerFile.value,
+  releaseVersionFile      := releaseVerFile.value,
   sonatypeBundleDirectory := releaseOutDir.value
 )
-
-
-

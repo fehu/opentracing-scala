@@ -2,9 +2,9 @@ package io.github.fehu.opentracing
 
 import scala.language.implicitConversions
 
-import cats.{ Show, ~> }
 import cats.effect.Resource
 import cats.syntax.show.*
+import cats.{ Show, ~> }
 import io.opentracing.{ Span, SpanContext, Tracer, tag }
 
 import io.github.fehu.opentracing.internal.compat.*
@@ -27,6 +27,7 @@ trait Traced[F[_]] extends Traced.Interface[F] {
   def currentSpan: Traced.SpanInterface[F]
 
   def forceCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
+
   /** Sets `active` span if no other is set. */
   def recoverCurrentSpan(active: Traced.ActiveSpan): F[Traced.SpanInterface[F]]
 
@@ -43,10 +44,10 @@ object Traced {
     def apply[A](op: String, tags: Traced.Tag*)(fa: F[A]): F[A]
     def spanResource(op: String, tags: Traced.Tag*): Resource[F, ActiveSpan]
 
-    final def apply[A](op: Operation)(fa: F[A]): F[A] = apply(op.operation, op.tags*)(fa)
+    final def apply[A](op: Operation)(fa: F[A]): F[A]                 = apply(op.operation, op.tags*)(fa)
     final def spanResource[A](op: Operation): Resource[F, ActiveSpan] = spanResource(op.operation, op.tags*)
 
-    final def apply[A](builder: Operation.Builder)(fa: F[A]): F[A] = apply(builder(Operation))(fa)
+    final def apply[A](builder: Operation.Builder)(fa: F[A]): F[A]                 = apply(builder(Operation))(fa)
     final def spanResource[A](builder: Operation.Builder): Resource[F, ActiveSpan] = spanResource(builder(Operation))
 
     def withParent(span: ActiveSpan): Interface[F]
@@ -64,7 +65,7 @@ object Traced {
   class Tag(val apply: Taggable.PartiallyApplied) extends AnyVal
 
   object Tag {
-    implicit def stringPair[A](p: (String, A))(implicit t: Taggable[A]): Tag = new Tag(t(p._1, p._2))
+    implicit def stringPair[A](p: (String, A))(implicit t: Taggable[A]): Tag  = new Tag(t(p._1, p._2))
     implicit def tagPair[A](p: (tag.Tag[A], A))(implicit t: Taggable[A]): Tag = new Tag(t(p._1.getKey.nn, p._2))
   }
 
@@ -75,13 +76,13 @@ object Traced {
     def apply(key: String, value: A): Taggable.PartiallyApplied =
       new Taggable.PartiallyApplied {
         def apply(builder: Tracer.SpanBuilder): Tracer.SpanBuilder = self(builder, key, value)
-        def apply(builder: Span): Span = self(builder, key, value)
+        def apply(builder: Span): Span                             = self(builder, key, value)
       }
 
     def contramap[B](f: B => A): Taggable[B] =
       new Taggable[B] {
         def apply(builder: Tracer.SpanBuilder, key: String, value: B): Tracer.SpanBuilder = self(builder, key, f(value))
-        def apply(builder: Span, key: String, value: B): Span = self(builder, key, f(value))
+        def apply(builder: Span, key: String, value: B): Span                             = self(builder, key, f(value))
       }
   }
 
@@ -93,16 +94,19 @@ object Traced {
 
     implicit lazy val stringIsTaggable: Taggable[String] =
       new Taggable[String] {
-        def apply(builder: Tracer.SpanBuilder, key: String, value: String): Tracer.SpanBuilder = builder.withTag(key, value).nn
+        def apply(builder: Tracer.SpanBuilder, key: String, value: String): Tracer.SpanBuilder =
+          builder.withTag(key, value).nn
         def apply(builder: Span, key: String, value: String): Span = builder.setTag(key, value).nn
       }
     implicit lazy val boolIsTaggable: Taggable[Boolean] =
       new Taggable[Boolean] {
-        def apply(builder: Tracer.SpanBuilder, key: String, value: Boolean): Tracer.SpanBuilder = builder.withTag(key, value).nn
+        def apply(builder: Tracer.SpanBuilder, key: String, value: Boolean): Tracer.SpanBuilder =
+          builder.withTag(key, value).nn
         def apply(builder: Span, key: String, value: Boolean): Span = builder.setTag(key, value).nn
       }
     implicit lazy val numberIsTaggable: Taggable[Number] = new Taggable[Number] {
-      def apply(builder: Tracer.SpanBuilder, key: String, value: Number): Tracer.SpanBuilder = builder.withTag(key, value).nn
+      def apply(builder: Tracer.SpanBuilder, key: String, value: Number): Tracer.SpanBuilder =
+        builder.withTag(key, value).nn
       def apply(builder: Span, key: String, value: Number): Span = builder.setTag(key, value).nn
     }
     implicit lazy val intIsTaggable: Taggable[Int]       = numberIsTaggable.contramap(Int.box)
@@ -132,11 +136,11 @@ object Traced {
   }
 
   class AccumulativeSpanInterface[F[_]](i: SpanInterface[F], accRev: List[SpanInterface[F] => F[Unit]]) {
-    def setTag(tag: Traced.Tag): AccumulativeSpanInterface[F] = accumulate(_.setTag(tag))
+    def setTag(tag: Traced.Tag): AccumulativeSpanInterface[F]    = accumulate(_.setTag(tag))
     def setTags(tags: Traced.Tag*): AccumulativeSpanInterface[F] = accumulate(_.setTags(tags*))
 
     def log(fields: (String, Any)*): AccumulativeSpanInterface[F] = accumulate(_.log(fields*))
-    def log(event: String): AccumulativeSpanInterface[F] = accumulate(_.log(event))
+    def log(event: String): AccumulativeSpanInterface[F]          = accumulate(_.log(event))
 
     def noop: AccumulativeSpanInterface[F] = this
 
@@ -195,7 +199,7 @@ object Traced {
 
   object ActiveSpan {
     def apply(span: Option[Span]): ActiveSpan = new ActiveSpan(span)
-    def apply(span: Span): ActiveSpan = apply(Option(span))
+    def apply(span: Span): ActiveSpan         = apply(Option(span))
 
     lazy val empty: ActiveSpan = new ActiveSpan(None)
 
@@ -205,19 +209,20 @@ object Traced {
   }
 
   final class Hooks(
-    val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
-    val justAfterStart: SpanInterface ~~> JustAfterStartRhs,
-    val beforeStop: SpanInterface ~~> BeforeStopRhs
+      val beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder,
+      val justAfterStart: SpanInterface ~~> JustAfterStartRhs,
+      val beforeStop: SpanInterface ~~> BeforeStopRhs
   )
 
   type JustAfterStartRhs[F[_]] = List[SpanInterface[F] => F[Unit]]
-  type BeforeStopRhs[F[_]] = Option[Throwable] => List[SpanInterface[F] => F[Unit]]
+  type BeforeStopRhs[F[_]]     = Option[Throwable] => List[SpanInterface[F] => F[Unit]]
 
   object Hooks {
     def apply(
-      beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder = locally,
-      justAfterStart: SpanInterfaceK2 => (AccumulativeSpanInterface ~~> AccumulativeSpanInterface) = _.noop,
-      beforeStop: SpanInterfaceK2 => Option[Throwable] => (AccumulativeSpanInterface ~~> AccumulativeSpanInterface) = s => _ => s.noop
+        beforeStart: Tracer.SpanBuilder => Tracer.SpanBuilder = locally,
+        justAfterStart: SpanInterfaceK2 => AccumulativeSpanInterface ~~> AccumulativeSpanInterface = _.noop,
+        beforeStop: SpanInterfaceK2 => Option[Throwable] => AccumulativeSpanInterface ~~> AccumulativeSpanInterface =
+          s => _ => s.noop
     ): Hooks =
       new Hooks(
         beforeStart,

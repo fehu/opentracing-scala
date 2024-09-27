@@ -8,11 +8,11 @@ import io.github.fehu.opentracing.internal.compat.*
 
 object BinaryPropagation extends Propagation {
   type Underlying = Binary
-  type Repr = Array[Byte]
+  type Repr       = Array[Byte]
 
   def format: Format[Binary] = Format.Builtin.BINARY.nn
 
-  def apply(): Carrier = new CarrierImpl(ByteBuffer.allocate(0).nn)
+  def apply(): Carrier                   = new CarrierImpl(ByteBuffer.allocate(0).nn)
   def apply(bytes: Array[Byte]): Carrier = new CarrierImpl(ByteBuffer.wrap(bytes).nn)
 
   private class CarrierImpl(private var buff: ByteBuffer) extends Carrier {

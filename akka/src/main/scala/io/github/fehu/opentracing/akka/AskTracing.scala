@@ -11,8 +11,7 @@ import io.github.fehu.opentracing.Traced
 import io.github.fehu.opentracing.syntax.*
 
 object AskTracing {
-  class Ops[F[_]: Async: Traced](ref: ActorRef, message: Any, sender: ActorRef)
-                                (implicit timeout: Timeout) {
+  class Ops[F[_]: Async: Traced](ref: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout) {
     def traced: F[Any] = trace0
 
     def trace(op: String, tags: Traced.Tag*): F[Any] = trace0.trace(op, tags*)
@@ -21,8 +20,8 @@ object AskTracing {
       for {
         ctx <- Traced.currentSpan.context
         res <- Async[F].fromFuture(
-                Async[F].delay{ pattern.ask(ref, TracedMessage(message, ctx), sender) }
-              )
+          Async[F].delay(pattern.ask(ref, TracedMessage(message, ctx), sender))
+        )
       } yield res
   }
 }

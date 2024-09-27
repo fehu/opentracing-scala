@@ -3,12 +3,12 @@ package io.github.fehu.opentracing.internal
 import scala.collection.JavaConverters.*
 
 import cats.effect.Sync
-import cats.~>
 import cats.instances.option.*
 import cats.syntax.applicative.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
+import cats.~>
 import io.opentracing.{ Span, SpanContext, Tracer }
 
 import io.github.fehu.opentracing.Traced
@@ -16,11 +16,11 @@ import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.util.ErrorLogger
 
 final case class State(
-  private[opentracing] val setup: Traced.Setup,
-  private[opentracing] val currentSpan: Option[Span],
+    private[opentracing] val setup: Traced.Setup,
+    private[opentracing] val currentSpan: Option[Span]
 ) {
-  @inline private[opentracing] def tracer: Tracer = setup.tracer
-  @inline private[opentracing] def hooks: Traced.Hooks = setup.hooks
+  @inline private[opentracing] def tracer: Tracer        = setup.tracer
+  @inline private[opentracing] def hooks: Traced.Hooks   = setup.hooks
   @inline private[opentracing] def logError: ErrorLogger = setup.logError
 
   @inline def activeSpan: Traced.ActiveSpan = Traced.ActiveSpan(currentSpan)
@@ -32,10 +32,9 @@ object State {
 }
 
 private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Option[Span]])(implicit sync: Sync[F])
-  extends Traced.SpanInterface[F]
-{ self =>
+    extends Traced.SpanInterface[F] { self =>
 
-  private def delay[R](f: Span => R): F[Option[R]] = fOpt.flatMap(_.traverse{ span => sync.delay(f(span)) })
+  private def delay[R](f: Span => R): F[Option[R]] = fOpt.flatMap(_.traverse(span => sync.delay(f(span))))
 
   def context: F[Option[SpanContext]] = delay(_.context().nn)
 
@@ -55,16 +54,16 @@ private[opentracing] class CurrentSpan[F[_]](private[opentracing] val fOpt: F[Op
   def getBaggageItem(key: String): F[Option[String]] = delay(_.getBaggageItem(key).nn)
 
   def mapK[G[_]](f: F ~> G): Traced.SpanInterface[G] = new Traced.SpanInterface[G] {
-    def context: G[Option[SpanContext]] = f(self.context)
-    def setOperation(op: String): G[Unit] = f(self.setOperation(op))
-    def setTag(tag: Traced.Tag): G[Unit] = f(self.setTag(tag))
-    def setTags(tags: Traced.Tag*): G[Unit] = f(self.setTags(tags*))
-    def log(fields: (String, Any)*): G[Unit] = f(self.log(fields*))
-    def log(event: String): G[Unit] = f(self.log(event))
+    def context: G[Option[SpanContext]]                     = f(self.context)
+    def setOperation(op: String): G[Unit]                   = f(self.setOperation(op))
+    def setTag(tag: Traced.Tag): G[Unit]                    = f(self.setTag(tag))
+    def setTags(tags: Traced.Tag*): G[Unit]                 = f(self.setTags(tags*))
+    def log(fields: (String, Any)*): G[Unit]                = f(self.log(fields*))
+    def log(event: String): G[Unit]                         = f(self.log(event))
     def setBaggageItem(key: String, value: String): G[Unit] = f(self.setBaggageItem(key, value))
-    def getBaggageItem(key: String): G[Option[String]] = f(self.getBaggageItem(key))
-    def mapK[H[_]](g: G ~> H): Traced.SpanInterface[H] = self.mapK(g compose f)
-    def noop: G[Unit] = f(sync.unit)
+    def getBaggageItem(key: String): G[Option[String]]      = f(self.getBaggageItem(key))
+    def mapK[H[_]](g: G ~> H): Traced.SpanInterface[H]      = self.mapK(g compose f)
+    def noop: G[Unit]                                       = f(sync.unit)
   }
 
   def noop: F[Unit] = sync.unit

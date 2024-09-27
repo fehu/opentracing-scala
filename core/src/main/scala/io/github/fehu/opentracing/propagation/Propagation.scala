@@ -18,6 +18,6 @@ trait Propagation { prop =>
     def repr: Repr
 
     final def format: Format[Underlying] = prop.format
-    final def propagation: prop.type = prop
+    final def propagation: prop.type     = prop
   }
 }

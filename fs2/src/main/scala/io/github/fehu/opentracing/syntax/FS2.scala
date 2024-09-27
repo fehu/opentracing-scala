@@ -18,45 +18,44 @@ object FS2 {
     def traceLifetime(operation: String, tags: Traced.Tag*): Stream[F, A] =
       tracingLifetime(t, operation, tags)
 
-    def traceLifetimeInjecting(ctx: SpanContext)
-                              (operation: String, tags: Traced.Tag*): Stream[F, A] =
+    def traceLifetimeInjecting(ctx: SpanContext)(operation: String, tags: Traced.Tag*): Stream[F, A] =
       tracingLifetime(t.injectContext(ctx), operation, tags)
 
     def traceLifetimeInjectingOpt(
-      ctx: Option[SpanContext],
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        ctx: Option[SpanContext],
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     )(
-      operation: String,
-      tags: Traced.Tag*
+        operation: String,
+        tags: Traced.Tag*
     ): Stream[F, A] =
       tracingLifetimeOpt(ctx.map(t.injectContext), operation, tags, traceEmpty, emptyOrphan)
 
-    def traceLifetimeInjectingFrom(carrier: Propagation#Carrier)
-                                  (operation: String, tags: Traced.Tag*): Stream[F, A] =
+    def traceLifetimeInjectingFrom(carrier: Propagation#Carrier)(operation: String, tags: Traced.Tag*): Stream[F, A] =
       tracingLifetime(t.injectContextFrom(carrier), operation, tags)
 
     def traceLifetimeInjectingFromOpt(
-      carrier: Option[Propagation#Carrier],
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        carrier: Option[Propagation#Carrier],
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     )(
-      operation: String,
-      tags: Traced.Tag*
+        operation: String,
+        tags: Traced.Tag*
     ): Stream[F, A] =
       tracingLifetimeOpt(carrier.map(t.injectContextFrom), operation, tags, traceEmpty, emptyOrphan)
 
-    def traceLifetimeInjectingPropagated(carrier: Propagation#Carrier)
-                                        (operation: String, tags: Traced.Tag*): Stream[F, A] =
+    def traceLifetimeInjectingPropagated(
+        carrier: Propagation#Carrier
+    )(operation: String, tags: Traced.Tag*): Stream[F, A] =
       traceLifetimeInjectingFrom(carrier)(operation, tags*)
 
     def traceLifetimeInjectingPropagatedOpt(
-      carrier: Option[Propagation#Carrier],
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        carrier: Option[Propagation#Carrier],
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     )(
-      operation: String,
-      tags: Traced.Tag*
+        operation: String,
+        tags: Traced.Tag*
     ): Stream[F, A] =
       traceLifetimeInjectingFromOpt(carrier, traceEmpty, emptyOrphan)(operation, tags*)
 
@@ -72,10 +71,10 @@ object FS2 {
       tracingElems(a => t.injectContext(context(a)), trace)
 
     def traceUsageInjectingOpt(
-      context: A => Option[SpanContext],
-      trace: A => Traced.Operation.Builder,
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        context: A => Option[SpanContext],
+        trace: A => Traced.Operation.Builder,
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     ): Stream[F, A] =
       tracingElemsOpt(context(_).map(t.injectContext), trace, traceEmpty, emptyOrphan)
 
@@ -83,21 +82,24 @@ object FS2 {
       tracingElems(a => t.injectContextFrom(carrier(a)), trace)
 
     def traceUsageInjectingFromOpt(
-      carrier: A => Option[Propagation#Carrier],
-      trace: A => Traced.Operation.Builder,
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        carrier: A => Option[Propagation#Carrier],
+        trace: A => Traced.Operation.Builder,
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     ): Stream[F, A] =
       tracingElemsOpt(carrier(_).map(t.injectContextFrom), trace, traceEmpty, emptyOrphan)
 
-    def traceUsageInjectingPropagated(carrier: A => Propagation#Carrier, trace: A => Traced.Operation.Builder): Stream[F, A] =
+    def traceUsageInjectingPropagated(
+        carrier: A => Propagation#Carrier,
+        trace: A => Traced.Operation.Builder
+    ): Stream[F, A] =
       traceUsageInjectingFrom(carrier, trace)
 
     def traceUsageInjectingPropagatedOpt(
-      carrier: A => Option[Propagation#Carrier],
-      trace: A => Traced.Operation.Builder,
-      traceEmpty: Boolean = true,
-      emptyOrphan: Boolean = true
+        carrier: A => Option[Propagation#Carrier],
+        trace: A => Traced.Operation.Builder,
+        traceEmpty: Boolean = true,
+        emptyOrphan: Boolean = true
     ): Stream[F, A] =
       traceUsageInjectingFromOpt(carrier, trace, traceEmpty, emptyOrphan)
 
@@ -113,11 +115,18 @@ object FS2 {
     private def tracingLifetime(i: Traced.Interface[F], op: String, tags: Seq[Traced.Tag]): Stream[F, A] =
       for {
         (span, finish) <- Stream eval i.spanResource(op, tags*).allocated
-        a <- stream.translate(FK.lift[F, F](t.recoverCurrentSpan(span) *> _))
-                   .onFinalize(finish)
+        a <- stream
+          .translate(FK.lift[F, F](t.recoverCurrentSpan(span) *> _))
+          .onFinalize(finish)
       } yield a
 
-    private def tracingLifetimeOpt(i: Option[Traced.Interface[F]], op: String, tags: Seq[Traced.Tag], traceEmpty: Boolean, emptyOrphan: Boolean): Stream[F, A] = {
+    private def tracingLifetimeOpt(
+        i: Option[Traced.Interface[F]],
+        op: String,
+        tags: Seq[Traced.Tag],
+        traceEmpty: Boolean,
+        emptyOrphan: Boolean
+    ): Stream[F, A] = {
       lazy val iw =
         if (traceEmpty) Some(if (emptyOrphan) t.withoutParent else t)
         else None
@@ -127,16 +136,21 @@ object FS2 {
     private def tracingElems(f: A => Traced.Interface[F], trace: A => Traced.Operation.Builder): Stream[F, A] =
       stream.flatMap(a => Stream.resource(f(a).spanResource(trace(a))).as(a))
 
-    private def tracingElemsOpt(f: A => Option[Traced.Interface[F]], trace: A => Traced.Operation.Builder, traceEmpty: Boolean, emptyOrphan: Boolean): Stream[F, A] =
+    private def tracingElemsOpt(
+        f: A => Option[Traced.Interface[F]],
+        trace: A => Traced.Operation.Builder,
+        traceEmpty: Boolean,
+        emptyOrphan: Boolean
+    ): Stream[F, A] =
       stream.flatMap { a =>
         lazy val iw =
           if (traceEmpty) Some(if (emptyOrphan) t.withoutParent else t)
           else None
-        f(a).orElse(iw).fold(
-          Stream.emit(a).covary[F]
-        )(
-          i => Stream.resource(i.spanResource(trace(a))).as(a)
-        )
+        f(a)
+          .orElse(iw)
+          .fold(
+            Stream.emit(a).covary[F]
+          )(i => Stream.resource(i.spanResource(trace(a))).as(a))
       }
   }
 

@@ -22,9 +22,13 @@ object Jaeger {
   def withConstSampler[F[_]: Sync](name: String): Resource[F, TracerExt] =
     apply(name)(
       _.withSampler(
-        SamplerConfiguration.fromEnv().nn
-          .withType(ConstSampler.TYPE).nn
-          .withParam(1).nn
+        SamplerConfiguration
+          .fromEnv()
+          .nn
+          .withType(ConstSampler.TYPE)
+          .nn
+          .withParam(1)
+          .nn
       ).nn
     )
 }

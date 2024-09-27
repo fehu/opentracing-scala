@@ -3,21 +3,21 @@ package io.github.fehu.opentracing.akka
 import akka.fehu.MessageInterceptingActor
 import io.opentracing.{ Span, SpanContext, Tracer }
 
-import io.github.fehu.opentracing.internal.compat.*
 import io.github.fehu.opentracing.Traced
+import io.github.fehu.opentracing.internal.compat.*
 
 final case class TracedMessage[A](message: A, spanContext: Option[SpanContext])
 
 trait TracingActor extends MessageInterceptingActor {
   implicit val tracer: Tracer
 
-  def actorSpanContext(): Option[SpanContext] = _spanContext
+  def actorSpanContext(): Option[SpanContext]   = _spanContext
   private var _spanContext: Option[SpanContext] = None
 
   protected[TracingActor] def setSpanContext(ctx: SpanContext): Unit = _spanContext = Option(ctx)
 
   protected def onSpanReceived(message: Any, ctx: SpanContext): Unit = setSpanContext(ctx)
-  protected def onNoSpanReceived(message: Any): Unit = {}
+  protected def onNoSpanReceived(message: Any): Unit                 = {}
 
   protected def interceptIncoming(message: Any): Any = message match {
     case TracedMessage(msg, Some(ctx)) =>
@@ -32,9 +32,8 @@ trait TracingActor extends MessageInterceptingActor {
       message
   }
 
-  protected def afterReceive(maybeError: Option[Throwable]): Unit = {
+  protected def afterReceive(maybeError: Option[Throwable]): Unit =
     _spanContext = None
-  }
 }
 
 object TracingActor {
@@ -44,7 +43,7 @@ object TracingActor {
 
     def buildChildSpan(message: Any): Tracer.SpanBuilder
 
-    def actorSpan(): Option[Span] = _span
+    def actorSpan(): Option[Span]   = _span
     private var _span: Option[Span] = None
 
     object buildSpan {
@@ -61,10 +60,9 @@ object TracingActor {
 
     def modifySpanOnError(span: Span): Span = span
 
-    override protected def afterReceive(maybeError: Option[Throwable]): Unit = {
+    override protected def afterReceive(maybeError: Option[Throwable]): Unit =
       try _span.map(modifySpanOnError).foreach(_.finish())
       finally super.afterReceive(maybeError)
-    }
   }
 
   trait AlwaysChildSpan extends ChildSpan {

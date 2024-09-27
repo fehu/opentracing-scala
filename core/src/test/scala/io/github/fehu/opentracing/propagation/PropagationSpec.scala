@@ -1,7 +1,7 @@
 package io.github.fehu.opentracing.propagation
 
-import cats.effect.std.Dispatcher
 import cats.effect.Sync
+import cats.effect.std.Dispatcher
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import org.scalatest.Ignore
@@ -18,15 +18,13 @@ abstract class PropagationSpec[F[_]: Traced: Sync] extends AnyFreeSpec with Spec
     for {
       _        <- Sync[F].pure(()).trace("A")
       carrier0 <- Traced.extractContext[F].to(TextMapPropagation)
-      repr      = carrier0.fold(Map.empty[String, String])(_.repr)
-      carrier1  = TextMapPropagation(repr)
-      _        <- Sync[F].pure(()).injectPropagated(carrier1)("B")
-    } yield {
-      finishedSpans() shouldBe Seq(
-        TestedSpan(spanId = 1, parentId = 0, operationName = "A"),
-        TestedSpan(spanId = 2, parentId = 1, operationName = "B")
-      )
-    }
+      repr     = carrier0.fold(Map.empty[String, String])(_.repr)
+      carrier1 = TextMapPropagation(repr)
+      _ <- Sync[F].pure(()).injectPropagated(carrier1)("B")
+    } yield finishedSpans() shouldBe Seq(
+      TestedSpan(spanId = 1, parentId = 0, operationName = "A"),
+      TestedSpan(spanId = 2, parentId = 1, operationName = "B")
+    )
   }
 
   "Serialize and deserialize span context through `Binary` built-in format" in {

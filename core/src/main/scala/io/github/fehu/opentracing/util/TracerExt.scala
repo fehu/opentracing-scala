@@ -6,11 +6,10 @@ import io.opentracing.Tracer
 
 import io.github.fehu.opentracing.Traced
 
-
 final case class TracerExt(tracer: Tracer) extends AnyVal {
   def setup(
-    hooks: Traced.Hooks = Traced.Hooks(),
-    logError: ErrorLogger = ErrorLogger.stdout
+      hooks: Traced.Hooks = Traced.Hooks(),
+      logError: ErrorLogger = ErrorLogger.stdout
   ): Traced.Setup =
     Traced.Setup(tracer, hooks, logError)
 }
