@@ -1,17 +1,16 @@
 // scalac plugin has its own version
 
-val scala212 = "2.12.16"
 val scala213 = "2.13.8"
 val scala3   = "3.1.3"
 
-ThisBuild / crossScalaVersions := List(scala212, scala213, scala3)
+ThisBuild / crossScalaVersions := List(scala213, scala3)
 ThisBuild / scalaVersion       := scala213
 ThisBuild / organization       := "io.github.fehu"
 ThisBuild / versionScheme      := Some("semver-spec")
 
 ThisBuild / libraryDependencies ++= {
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
-    case Some((2, 12 | 13)) =>
+    case Some((2, 13)) =>
       Seq(
         Dependencies.`kind-projector`,
         Dependencies.`monadic-for`
@@ -33,7 +32,7 @@ ThisBuild / Compile / scalacOptions ++= Seq(
         "-Ysafe-init",
         "-source:future"
       )
-    case Some((2, 12 | 13)) =>
+    case Some((2, 13)) =>
       Seq(
         "-language:higherKinds",
         "-Xsource:3",
@@ -71,13 +70,7 @@ lazy val core = module("core")
       Dependencies.`cats-core`,
       Dependencies.`cats-effect`
     ),
-    libraryDependencies ++= testDependencies,
-    Compile / scalacOptions ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 12)) => List("-Ypartial-unification")
-        case _             => Nil
-      }
-    }
+    libraryDependencies ++= testDependencies
   )
 
 lazy val akka = module("akka")
@@ -121,7 +114,7 @@ ThisBuild / Test / parallelExecution := false
 // Has its own configuration file (and own version)
 lazy val `compiler-plugin` = project in file("compiler-plugin") settings (
   releaseCommonSettings,
-  crossScalaVersions := List(scala212, scala213)
+  crossScalaVersions := List(scala213)
 )
 
 // // // Misc // // //

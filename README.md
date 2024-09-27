@@ -8,7 +8,7 @@ Functional interface for opentracing and its implementation, based on `cats.data
 
 Requires `cats-effect` **3**.
 
-Supports scala `2.12`, `2.13` and `3.1`.
+Supports scala `2.13` and `3.1`.
 
 ### `Traced[F[_]]` typeclass
 [Code](core/src/main/scala/io/github/fehu/opentracing/Traced.scala)
