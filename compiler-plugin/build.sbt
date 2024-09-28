@@ -12,11 +12,11 @@ enablePlugins(AssemblyPlugin)
 
 assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(true)
 assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", _*)            => MergeStrategy.discard
-  case PathList("rootdoc.txt")             => MergeStrategy.discard
-  case PathList("LICENSE" | "NOTICE")      => MergeStrategy.deduplicate
-  case PathList("javax", "annotation", _*) => MergeStrategy.first
-  case _                                   => MergeStrategy.singleOrError
+  case PathList("META-INF", xs @ _*) if xs.lastOption.exists(_.endsWith(".class")) =>
+    MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
 }
 
 Compile / packageBin := (Compile / assembly).value

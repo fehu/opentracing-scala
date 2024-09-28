@@ -23,8 +23,19 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
 
   analyzer.addAnalyzerPlugin(new ImplicitsTracingAnalyzer)
 
+  // A workaround for `ClassNotFoundException`s.
+  // Found at [[https://github.com/jaegertracing/jaeger-client-java/issues/593]]
+  Class.forName("io.jaegertracing.internal.reporters.RemoteReporter$CloseCommand")
+  Class.forName("io.jaegertracing.internal.reporters.RemoteReporter$FlushCommand")
+  Class.forName("io.jaegertracing.agent.thrift.Agent$emitBatch_args")
+  Class.forName("io.jaegertracing.agent.thrift.Agent$emitBatch_args$emitBatch_argsStandardScheme")
+  Class.forName("io.jaegertracing.agent.thrift.Agent$Client")
+  Class.forName("io.jaegertracing.thriftjava.Batch")
+  Class.forName("io.jaegertracing.thriftjava.Batch$BatchStandardScheme")
+  Class.forName("org.apache.thrift.protocol.TMessage")
+
   class ImplicitsTracingAnalyzer extends analyzer.AnalyzerPlugin {
-    override def pluginsNotifyImplicitSearch(search: global.analyzer.ImplicitSearch): Unit = {
+    override def pluginsNotifyImplicitSearch(search: global.analyzer.ImplicitSearch): Unit = try {
       val pos  = search.pos
       val code = if (pos.source != NoSourceFile) pos.lineContent else "<NoSourceFile>"
       val span = tracer
@@ -38,14 +49,18 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
         .start()
       spansStack.push(span)
       super.pluginsNotifyImplicitSearch(search)
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        throw ex
     }
 
-    override def pluginsNotifyImplicitSearchResult(result: global.analyzer.SearchResult): Unit = {
+    override def pluginsNotifyImplicitSearchResult(result: global.analyzer.SearchResult): Unit = try {
       val span = spansStack.pop()
       span.setTag("isSuccess", result.isSuccess)
       val symb = result.tree.symbol
       val providedBy =
-        if (symb eq null) typeNames.NO_NAME.toString
+        if (symb == null || symb == NoSymbol) typeNames.NO_NAME.toString
         else {
           val rt    = result.tree.tpe.resultType
           val targs = if (rt.typeArgs.nonEmpty) rt.typeArgs.mkString("[", ", ", "]") else ""
@@ -56,13 +71,11 @@ class ImplicitSearchTracingPlugin(val global: Global) extends Plugin {
         span.setTag(s"type subst ${from.name}", to.toLongString)
       }
       span.finish()
-      if (spansStack.isEmpty) {
-        // A workaround for `ClassNotFoundException`s on closing the tracer.
-        // Found at [[https://github.com/jaegertracing/jaeger-client-java/issues/593]]
-        Class.forName("io.jaegertracing.internal.reporters.RemoteReporter$CloseCommand")
-        Class.forName("io.jaegertracing.agent.thrift.Agent$Client")
-      }
       super.pluginsNotifyImplicitSearchResult(result)
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        throw ex
     }
 
     private def showName(name0: String): String =
