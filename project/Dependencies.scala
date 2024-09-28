@@ -23,17 +23,17 @@ object Dependencies {
 
   object Version {
     lazy val opentracing  = "0.33.0"
-    lazy val jaegerClient = "1.8.0"
+    lazy val jaegerClient = "1.8.1"
 
-    lazy val cats       = "2.8.0"
-    lazy val catsEffect = "3.3.12"
-    lazy val fs2        = "3.2.8"
+    lazy val cats       = "2.12.0"
+    lazy val catsEffect = "3.5.4"
+    lazy val fs2        = "3.11.0"
 
-    lazy val kindProjector = "0.13.2"
+    lazy val kindProjector = "0.13.3"
     lazy val monadicFor    = "0.3.1"
 
-    lazy val akka = "2.6.19"
+    lazy val akka = "2.8.6"
 
-    lazy val scalatest = "3.2.12"
+    lazy val scalatest = "3.2.19"
   }
 }
