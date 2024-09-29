@@ -3,7 +3,12 @@ import sbt._
 
 object Dependencies {
 
-  lazy val `scala-compiler` = Def.setting(scalaOrganization.value % "scala-compiler" % scalaVersion.value)
+  lazy val `scala-compiler` = Def.setting {
+    (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
+      case Some((2, _)) => scalaOrganization.value  % "scala-compiler"  % scalaVersion.value
+      case Some((3, _)) => scalaOrganization.value %% "scala3-compiler" % scalaVersion.value
+    }
+  }
 
   lazy val `opentracing-api`  = "io.opentracing"   % "opentracing-api"  % Version.opentracing
   lazy val `opentracing-mock` = "io.opentracing"   % "opentracing-mock" % Version.opentracing

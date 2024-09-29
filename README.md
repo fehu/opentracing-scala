@@ -94,9 +94,8 @@ Other modules:
 - `opentracing-scala-jaeger` - Setup helper for `io.jaegertracing`.
 - `opentracing-scala-noop` - No-op setup.
 
+
 # `opentracing-scalac-implicits-jaeger` (Scala 2 only)
-
-
 
 **Compiler plugin** that traces _implicit searches_ performed by scalac
 and reports them to local jaegertracing backend.
@@ -110,3 +109,20 @@ and reports them to local jaegertracing backend.
 - Run, for example, [all-in-one](https://www.jaegertracing.io/docs/latest/getting-started/#all-in-one) jaeger backend with docker
 - Compile your project
 - See the traces at http://localhost:16686
+
+# `TracingPlugin` (Scala 3)
+
+**Compiler plugin** that traces _implicit searches_ performed by scalac
+and reports them to local jaegertracing backend.
+
+
+#### Usage
+- Put to your `build.sbt`
+    ```sbtshell
+    addCompilerPlugin("io.github.fehu" %% "scala3-compiler-tracing-jaeger" % "0.1.0")
+    ```
+- Since this is a [research plugin](https://docs.scala-lang.org/scala3/reference/changed-features/compiler-plugins.html),
+  you would need to use `NIGHTLY` scala compiler.
+  You can find the version at [maven](https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/).
+
+Note: it doesn't work with `graalvm` java.

@@ -1,45 +1,47 @@
 // scalac plugin has its own version
 
-val scala213 = "2.13.14"
-val scala3   = "3.5.0"
+val scala213      = "2.13.14"
+val scala3        = "3.5.0"
+val scala3Nightly = "3.5.0-RC1-bin-20240520-8563571-NIGHTLY"
 
 ThisBuild / crossScalaVersions := List(scala213, scala3)
 ThisBuild / scalaVersion       := scala213
 ThisBuild / organization       := "io.github.fehu"
 ThisBuild / versionScheme      := Some("semver-spec")
 
-ThisBuild / libraryDependencies ++= {
-  (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
-    case Some((2, 13)) =>
-      Seq(
-        Dependencies.`kind-projector`,
-        Dependencies.`monadic-for`
-      ).map(sbt.compilerPlugin)
-    case Some((3, _)) =>
-      Seq()
+lazy val commonSettings = Seq(
+  libraryDependencies ++= {
+    (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
+      case Some((2, 13)) =>
+        Seq(
+          Dependencies.`kind-projector`,
+          Dependencies.`monadic-for`
+        ).map(sbt.compilerPlugin)
+      case Some((3, _)) =>
+        Seq()
+    }
+  },
+  Compile / scalacOptions ++= Seq(
+    "-feature",
+    "-deprecation"
+  ) ++ {
+    (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
+      case Some((3, _)) =>
+        Seq(
+          "-Xkind-projector:underscores",
+          "-Yexplicit-nulls",
+          "-Wsafe-init",
+          "-source:future"
+        )
+      case Some((2, 13)) =>
+        Seq(
+          "-language:higherKinds",
+          "-Xsource:3",
+          "-P:kind-projector:underscore-placeholders"
+        )
+    }
   }
-}
-
-ThisBuild / Compile / scalacOptions ++= Seq(
-  "-feature",
-  "-deprecation"
-) ++ {
-  (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
-    case Some((3, _)) =>
-      Seq(
-        "-Xkind-projector:underscores",
-        "-Yexplicit-nulls",
-        "-Wsafe-init",
-        "-source:future"
-      )
-    case Some((2, 13)) =>
-      Seq(
-        "-language:higherKinds",
-        "-Xsource:3",
-        "-P:kind-projector:underscore-placeholders"
-      )
-  }
-}
+)
 
 // // // Modules // // //
 
@@ -72,6 +74,7 @@ lazy val core = module("core")
     ),
     libraryDependencies ++= testDependencies
   )
+  .settings(commonSettings)
 
 lazy val akka = module("akka")
   .settings(
@@ -115,6 +118,13 @@ ThisBuild / Test / parallelExecution := false
 lazy val `compiler-plugin` = project in file("compiler-plugin") settings (
   releaseCommonSettings,
   crossScalaVersions := List(scala213)
+)
+
+// Has its own configuration file (and own version)
+lazy val `compiler-plugin-3` = project in file("compiler-plugin-3") settings (
+  releaseCommonSettings,
+  scalaVersion       := scala3Nightly,
+  crossScalaVersions := List(scala3Nightly)
 )
 
 // // // Misc // // //
