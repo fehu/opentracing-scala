@@ -1,7 +1,7 @@
 // scalac plugin has its own version
 
 val scala213 = "2.13.14"
-val scala3   = "3.1.3"
+val scala3   = "3.5.0"
 
 ThisBuild / crossScalaVersions := List(scala213, scala3)
 ThisBuild / scalaVersion       := scala213
@@ -27,9 +27,9 @@ ThisBuild / Compile / scalacOptions ++= Seq(
   (CrossVersion.partialVersion(scalaVersion.value): @unchecked) match {
     case Some((3, _)) =>
       Seq(
-        "-Ykind-projector:underscores",
+        "-Xkind-projector:underscores",
         "-Yexplicit-nulls",
-        "-Ysafe-init",
+        "-Wsafe-init",
         "-source:future"
       )
     case Some((2, 13)) =>

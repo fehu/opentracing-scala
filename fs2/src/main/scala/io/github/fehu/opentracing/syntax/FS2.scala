@@ -108,7 +108,7 @@ object FS2 {
     def tracedLog(f: A => Seq[(String, Any)]): Stream[F, A] =
       stream.evalTap(a => t.currentSpan.log(f(a)*))
 
-    def tracedElemLog: Stream[F, A] = stream.evalTap(t.currentSpan log _.toString)
+    def tracedElemLog: Stream[F, A] = stream.evalTap(t.currentSpan `log` _.toString)
 
     // // // Helpers // // //
 

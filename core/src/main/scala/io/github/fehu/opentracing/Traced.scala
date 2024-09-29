@@ -226,7 +226,7 @@ object Traced {
     ): Hooks =
       new Hooks(
         beforeStart,
-        accumulateK2 compose justAfterStart(SpanInterfaceK2) compose accumulativeSpanInterfaceK2,
+        accumulateK2 `compose` justAfterStart(SpanInterfaceK2) `compose` accumulativeSpanInterfaceK2,
         new (SpanInterface ~~> BeforeStopRhs) {
           def apply[A[_]](fa: SpanInterface[A]): Option[Throwable] => List[SpanInterface[A] => A[Unit]] =
             e => beforeStop(SpanInterfaceK2)(e)(new AccumulativeSpanInterface(fa, Nil)).accumulated

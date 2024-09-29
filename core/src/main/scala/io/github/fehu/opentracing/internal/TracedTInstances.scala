@@ -314,8 +314,8 @@ private[opentracing] trait TracedTGenSpawnInstance[F[_], E]
        with TracedTMonadCancelProxy[F, E] {
   protected val F: GenSpawn[F, E]
 
-  implicit private[this] def F0: GenSpawn[F, E]               = F
-  protected[this] def run[A](s: State)(traced: TracedT[F, A]) = traced.run(s).map(_._2)
+  implicit private def F0: GenSpawn[F, E]               = F
+  protected def run[A](s: State)(traced: TracedT[F, A]) = traced.run(s).map(_._2)
 
   def start[A](fa: TracedT[F, A]): TracedT[F, Fiber[TracedT[F, _], E, A]] = TracedT(
     for {
@@ -347,7 +347,7 @@ private[opentracing] trait TracedTGenConcurrentInstance[F[_], E]
     extends GenConcurrent[TracedT[F, _], E]
        with TracedTGenSpawnInstance[F, E] {
   protected val F: GenConcurrent[F, E]
-  implicit private[this] def F0: GenConcurrent[F, E] = F
+  implicit private def F0: GenConcurrent[F, E] = F
 
   def ref[A](a: A): TracedT[F, Ref[TracedT[F, _], A]]     = TracedT.liftF(F.ref(a).map(_.mapK(TracedT.liftK)))
   def deferred[A]: TracedT[F, Deferred[TracedT[F, _], A]] = TracedT.liftF(F.deferred[A].map(_.mapK(TracedT.liftK)))
@@ -379,7 +379,7 @@ private[opentracing] trait TracedTAsyncInstance[F[_]]
        with TracedTGenTemporalInstance[F, Throwable]
        with TracedTSyncProxy[F] {
   protected val F: Async[F]
-  implicit private[this] def F0: Async[F] = F
+  implicit private def F0: Async[F] = F
 
   def evalOn[A](fa: TracedT[F, A], ec: ExecutionContext): TracedT[F, A] =
     for {
